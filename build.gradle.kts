@@ -29,8 +29,4 @@ kotlin {
             }
         }
     }
-
-    sourceSets {
-        nativeMain.dependencies {  }
-    }
 }
