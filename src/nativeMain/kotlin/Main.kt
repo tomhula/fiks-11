@@ -11,14 +11,15 @@ fun processInput(): List<Entry>
     val numOfEntries = readln().toInt()
     val entries = mutableListOf<Entry>()
 
-    for (i in 0 until numOfEntries)
+    repeat(numOfEntries)
     {
         val firstLineInts = readln().split(" ").map(String::toInt)
         val numOfPoints = firstLineInts[0]
         val speeds = Speeds(firstLineInts[1], firstLineInts[2], firstLineInts[3])
         val points = mutableListOf<Point>()
-        for (j in 0 until numOfPoints)
+        repeat(numOfPoints) {
             points.add(parsePoint(readln()))
+        }
         entries.add(Entry(speeds, points))
     }
 
