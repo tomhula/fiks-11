@@ -30,11 +30,8 @@ fun solve(entry: Entry): Double
 {
     var totalTime = 0.0
 
-    for (i in 0 until entry.points.size - 1)
+    for ((current, next) in entry.points.zipWithNext())
     {
-        val current = entry.points[i]
-        val next = entry.points[i + 1]
-
         val distance = current.distanceTo(next)
         val verticalDistance = current.verticalDistanceTo(next)
         val speed = if (verticalDistance > 0) entry.speeds.ascending
