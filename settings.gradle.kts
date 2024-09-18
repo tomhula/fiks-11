@@ -3,5 +3,9 @@ plugins {
 }
 
 rootProject.name = "fiks-11"
+
 include("trasa")
 project(":trasa").projectDir = file("kolo1/trasa")
+
+include("posadka")
+project(":posadka").projectDir = file("kolo1/posadka")
