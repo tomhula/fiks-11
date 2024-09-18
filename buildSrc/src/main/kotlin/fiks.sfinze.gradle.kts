@@ -1,7 +1,6 @@
-import org.jetbrains.kotlin.org.apache.commons.io.output.ByteArrayOutputStream
-
 plugins {
     kotlin("multiplatform")
+    application
 }
 
 group = "me.tomasan7"
@@ -33,6 +32,18 @@ kotlin {
             }
         }
     }
+
+    jvm {
+        withJava()
+    }
+}
+
+application {
+    mainClass.set("MainKt")
+}
+
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
 }
 
 tasks {
