@@ -4,13 +4,16 @@ fun main()
 
     for (entry in entries)
     {
+        val crew = entry.crew
+        val availablePoints = entry.availablePoints
+
         try
         {
-            val remainingPoints = stabilise(entry.crew.leader, entry.crew, entry.availablePoints)
-            val (crew, memberWithLeastPoints) = distributePoints(entry.crew, remainingPoints)
+            val remainingPoints = stabilise(crew, availablePoints)
+            val memberWithLeastPoints = distributePoints(crew, remainingPoints)
             println(memberWithLeastPoints.points)
         }
-        catch (e: Exception)
+        catch (e: OutOfPointsException)
         {
             println("ajajaj")
         }
@@ -20,33 +23,60 @@ fun main()
 /**
  * @return the [Member] with the least points.
  */
-fun distributePoints(crew: Crew, availablePoints: Long): Pair<Crew, Member>
+fun distributePoints(crew: Crew, availablePoints: Long): Member
 {
+    if (crew.size == 1)
+    {
+        crew.leader.points += availablePoints
+        return crew.leader
+    }
+
     var remainingPoints = availablePoints
-    var workingCrew = crew
-    var last: Member? = null
+    val membersLeastToMost = crew.getLeafMembers().sortedBy{ it.points }.toMutableList()
 
     while (remainingPoints > 0)
     {
-        val leaderboard = workingCrew.getAllMembers().sortedByDescending { it.points }
-        last = leaderboard.last()
-        remainingPoints--
-        last.points++
-        val crewCopy = workingCrew.copy()
-        try
+        val first = membersLeastToMost.first()
+        val second = membersLeastToMost.getOrNull(1)
+
+        val pointsNeededForStabilisation = branchStabilisationPointsNeeded(first, crew, 1)
+
+        if (pointsNeededForStabilisation + 1 <= remainingPoints)
         {
-            remainingPoints = stabiliseBranch(last, crewCopy, remainingPoints)
-            workingCrew = crewCopy
+            first.points++
+            remainingPoints--
+            remainingPoints = stabiliseBranch(first, crew, remainingPoints)
         }
-        catch (e: OutOfPointsException)
+        else
+            break
+
+        if (second == null)
+            break
+
+        if (first.points > second.points)
         {
-            /* It was impossible to have a stable crew with that amount of points */
-            last.points--
-            return workingCrew to last
+            for (i in 1 until membersLeastToMost.size)
+            {
+                val member = membersLeastToMost[i]
+
+                if (member.points >= first.points)
+                {
+                    membersLeastToMost.add(i, first)
+                    membersLeastToMost.removeFirst()
+                    break
+                }
+                /* No number is larger, so go to the end */
+                else if (i == membersLeastToMost.size - 1)
+                {
+                    membersLeastToMost.add(first)
+                    membersLeastToMost.removeFirst()
+                    break
+                }
+            }
         }
     }
 
-    return workingCrew to last!!
+    return membersLeastToMost.first()
 }
 
 fun parseInput(): List<Entry>
@@ -88,17 +118,19 @@ fun parseInput(): List<Entry>
     return entries
 }
 
-/** Calls [stabiliseBranch] on each member down (DFS) from [member].
- * @param availablePoints amount of points we  */
-private fun stabilise(member: Member, crew: Crew, availablePoints: Long): Long
+/**
+ * Calls [stabiliseBranch] on leaf members.
+ * @param availablePoints amount of points available
+ * @throws OutOfPointsException when running out of points without reaching stability
+ */
+private fun stabilise(crew: Crew, availablePoints: Long): Long
 {
+    val leafMembers = crew.getLeafMembers()
     var remainingPoints = availablePoints
 
-    for (inferior in crew.getInferiorsTo(member))
-    {
-        remainingPoints = stabiliseBranch(inferior, crew, remainingPoints)
-        remainingPoints = stabilise(inferior, crew, remainingPoints)
-    }
+    for (leafMember in leafMembers)
+        /* branchStabilisationPointsNeeded check not needed, because the crew ends once it is impossible to stabilise */
+        remainingPoints = stabiliseBranch(leafMember, crew, remainingPoints)
 
     return remainingPoints
 }
@@ -106,6 +138,7 @@ private fun stabilise(member: Member, crew: Crew, availablePoints: Long): Long
 /**
  * Gives points from [availablePoints] to superior of [member], so superior's points > [member]'s points.
  * If any points were given, recursively calls this function with superior, until leader. (no more superior)
+ * [branchStabilisationPointsNeeded] should be called before this function to check if there are enough points to stabilise the branch.
  * @return remaining points after giving out
  * @throws OutOfPointsException when running out of points without reaching stability
  */
@@ -134,6 +167,32 @@ private fun stabiliseBranch(member: Member, crew: Crew, availablePoints: Long): 
         return remainingPoints
 }
 
+private fun branchStabilisationPointsNeeded(member: Member, crew: Crew, memberPointsOffset: Long = 0): Long
+{
+    var totalPointsNeeded = 0L
+
+    fun branchStabilisationPointsNeededRec(member: Member, memberPointsOffset: Long)
+    {
+        val superior = crew.getSuperiorTo(member) ?: return
+
+        val superiorPoints = superior.points
+        val memberPoints = member.points + memberPointsOffset
+
+        if (superiorPoints <= memberPoints)
+        {
+            val neededPoints = memberPoints - superiorPoints + 1
+            totalPointsNeeded += neededPoints
+            branchStabilisationPointsNeededRec(superior, neededPoints)
+        }
+        else
+            return
+    }
+
+    branchStabilisationPointsNeededRec(member, memberPointsOffset)
+
+    return totalPointsNeeded
+}
+
 private fun readInts(): List<Int> = readln().split(" ").map(String::toInt)
 
 private fun readLongs(): List<Long> = readln().split(" ").map(String::toLong)
@@ -148,6 +207,8 @@ class Crew(crew: Map<Int, Set<Int>>, members: Map<Int, Int>, private val points:
     private val membersById: Map<Int, Member> = members.keys.map { createMember(it) }.associateBy { it.id }
     private val crew: Map<Member, Set<Member>> = crew.mapKeys { getMemberById(it.key)!! }.mapValues { it.value.map { id -> getMemberById(id)!! }.toSet() }
     private val membersSuperiors: Map<Member, Member?> = members.mapKeys { getMemberById(it.key)!! }.mapValues { if (it.value == -1) null else getMemberById(it.value) }
+    private val leafMembers = membersById.values.filter { it !in membersSuperiors.values }
+    val size = membersById.size
     val leader = membersSuperiors.entries.find { it.value == null }!!.key
 
     private fun getMemberById(id: Int) = membersById[id]
@@ -156,6 +217,7 @@ class Crew(crew: Map<Int, Set<Int>>, members: Map<Int, Int>, private val points:
     fun getInferiorsTo(superior: Member) = crew[superior]!!
     fun isLeader(member: Member) = member === leader
     fun getAllMembers() = membersById.values
+    fun getLeafMembers() = leafMembers
 
     fun copy() = Crew(
         this.crew.mapKeys { it.key.id }.mapValues { it.value.map { member -> member.id }.toSet() },
