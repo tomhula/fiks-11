@@ -47,7 +47,16 @@ kotlin {
 tasks {
     @OptIn(InternalKotlinGradlePluginApi::class)
     withType<KotlinJvmRun> {
-        standardInput = System.`in`
+        val inputFile = file("stdin.txt")
+        standardInput = if (inputFile.exists())
+            inputFile.inputStream()
+        else
+            System.`in`
+
+        doFirst {
+            if (inputFile.exists())
+                println("Using ${inputFile.name} as standard input.")
+        }
     }
 
     val nativeMainBinaries by getting
