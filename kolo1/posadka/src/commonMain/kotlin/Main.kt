@@ -32,7 +32,7 @@ fun distributePoints(crew: Crew, availablePoints: Long): Member
     }
 
     var remainingPoints = availablePoints
-    val membersLeastToMost = crew.getLeafMembers().sortedBy{ it.points }.toMutableList()
+    val membersLeastToMost = crew.leafMembers.sortedBy{ it.points }.toMutableList()
 
     while (remainingPoints > 0)
     {
@@ -89,28 +89,28 @@ fun parseInput(): List<Entry>
         val numOfMembers = firstLine[0].toInt()
         val availablePoints = firstLine[1]
         val pointsLine = readLongs()
-        val superiorsLine = readInts()
+        val parentsLine = readInts()
 
-        /* Superior id to set of it's inferiors */
-        val inferiorIds = mutableMapOf<Int, MutableSet<Int>>()
-        /* Inferior id to its superior's id */
-        val superiorIds = mutableMapOf<Int, Int>()
+        /* Parent id to set of it's children */
+        val parentToChildrenIds = mutableMapOf<Int, MutableSet<Int>>()
+        /* Child id to its parent's id */
+        val membersToParentIds = mutableMapOf<Int, Int>()
 
         for (i in 0..< numOfMembers)
         {
             val id = i + 1
-            val superiorId = superiorsLine[i]
+            val parentId = parentsLine[i]
 
-            superiorIds[id] = superiorId
-            if (superiorId != -1)
-                inferiorIds.getOrPut(superiorId, { mutableSetOf() }).add(id)
+            membersToParentIds[id] = parentId
+            if (parentId != -1)
+                parentToChildrenIds.getOrPut(parentId, { mutableSetOf() }).add(id)
         }
 
-        for (member in superiorIds.keys)
-            if (!inferiorIds.containsKey(member))
-                inferiorIds[member] = mutableSetOf()
+        for (member in membersToParentIds.keys)
+            if (!parentToChildrenIds.containsKey(member))
+                parentToChildrenIds[member] = mutableSetOf()
 
-        val crew = Crew(inferiorIds, superiorIds, pointsLine)
+        val crew = Crew(parentToChildrenIds, membersToParentIds, pointsLine)
         val entry = Entry(availablePoints, crew)
         entries.add(entry)
     }
@@ -125,10 +125,9 @@ fun parseInput(): List<Entry>
  */
 private fun stabilise(crew: Crew, availablePoints: Long): Long
 {
-    val leafMembers = crew.getLeafMembers()
     var remainingPoints = availablePoints
 
-    for (leafMember in leafMembers)
+    for (leafMember in crew.leafMembers)
         /* branchStabilisationPointsNeeded check not needed, because the crew ends once it is impossible to stabilise */
         remainingPoints = stabiliseBranch(leafMember, crew, remainingPoints)
 
@@ -136,30 +135,30 @@ private fun stabilise(crew: Crew, availablePoints: Long): Long
 }
 
 /**
- * Gives points from [availablePoints] to superior of [member], so superior's points > [member]'s points.
- * If any points were given, recursively calls this function with superior, until leader. (no more superior)
+ * Gives points from [availablePoints] to a parent of [member], so parent's points > [member]'s points.
+ * If any points were given, recursively calls this function with parent, until leader. (no more parent)
  * [branchStabilisationPointsNeeded] should be called before this function to check if there are enough points to stabilise the branch.
  * @return remaining points after giving out
  * @throws OutOfPointsException when running out of points without reaching stability
  */
 private fun stabiliseBranch(member: Member, crew: Crew, availablePoints: Long): Long
 {
-    val superior = crew.getSuperiorTo(member)
+    val parent = crew.getParentOf(member)
     var remainingPoints = availablePoints
 
-    if (superior == null)
+    if (parent == null)
         return remainingPoints
 
-    if (superior.points <= member.points)
+    if (parent.points <= member.points)
     {
-        val neededPoints = member.points - superior.points + 1
+        val neededPoints = member.points - parent.points + 1
         if (remainingPoints < neededPoints)
             throw OutOfPointsException()
-        superior.points += neededPoints
+        parent.points += neededPoints
         remainingPoints -= neededPoints
 
-        if (crew.getSuperiorTo(superior) != null)
-            return stabiliseBranch(superior, crew, remainingPoints)
+        if (crew.getParentOf(parent) != null)
+            return stabiliseBranch(parent, crew, remainingPoints)
         else
             return remainingPoints
     }
@@ -173,16 +172,16 @@ private fun branchStabilisationPointsNeeded(member: Member, crew: Crew, memberPo
 
     fun branchStabilisationPointsNeededRec(member: Member, memberPointsOffset: Long)
     {
-        val superior = crew.getSuperiorTo(member) ?: return
+        val parent = crew.getParentOf(member) ?: return
 
-        val superiorPoints = superior.points
+        val parentPoints = parent.points
         val memberPoints = member.points + memberPointsOffset
 
-        if (superiorPoints <= memberPoints)
+        if (parentPoints <= memberPoints)
         {
-            val neededPoints = memberPoints - superiorPoints + 1
+            val neededPoints = memberPoints - parentPoints + 1
             totalPointsNeeded += neededPoints
-            branchStabilisationPointsNeededRec(superior, neededPoints)
+            branchStabilisationPointsNeededRec(parent, neededPoints)
         }
         else
             return
@@ -206,24 +205,17 @@ class Crew(crew: Map<Int, Set<Int>>, members: Map<Int, Int>, private val points:
 {
     private val membersById: Map<Int, Member> = members.keys.map { createMember(it) }.associateBy { it.id }
     private val crew: Map<Member, Set<Member>> = crew.mapKeys { getMemberById(it.key)!! }.mapValues { it.value.map { id -> getMemberById(id)!! }.toSet() }
-    private val membersSuperiors: Map<Member, Member?> = members.mapKeys { getMemberById(it.key)!! }.mapValues { if (it.value == -1) null else getMemberById(it.value) }
-    private val leafMembers = membersById.values.filter { it !in membersSuperiors.values }
+    private val memberToParent: Map<Member, Member?> = members.mapKeys { getMemberById(it.key)!! }.mapValues { if (it.value == -1) null else getMemberById(it.value) }
+    val leafMembers = membersById.values.filter { it !in memberToParent.values }
+    val allMembers = membersById.values
     val size = membersById.size
-    val leader = membersSuperiors.entries.find { it.value == null }!!.key
+    val leader = memberToParent.entries.find { it.value == null }!!.key
 
     private fun getMemberById(id: Int) = membersById[id]
 
-    fun getSuperiorTo(inferior: Member) = membersSuperiors[inferior]
-    fun getInferiorsTo(superior: Member) = crew[superior]!!
+    fun getParentOf(child: Member) = memberToParent[child]
+    fun getChildrenOf(parent: Member) = crew[parent]!!
     fun isLeader(member: Member) = member === leader
-    fun getAllMembers() = membersById.values
-    fun getLeafMembers() = leafMembers
-
-    fun copy() = Crew(
-        this.crew.mapKeys { it.key.id }.mapValues { it.value.map { member -> member.id }.toSet() },
-        membersSuperiors.mapKeys { it.key.id }.mapValues { it.value?.id ?: -1 },
-        membersById.entries.sortedBy { it.key }.map { it.value.points }
-    )
 
     private fun createMember(id: Int) = Member(id, points[id - 1])
 
