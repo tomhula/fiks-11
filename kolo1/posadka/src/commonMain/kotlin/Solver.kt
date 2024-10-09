@@ -81,20 +81,17 @@ class Solver(val crew: Crew)
                 else
                 {
                     log("### Step not possible")
-                    val combinedNestLevels = weakestMembers.sumOf { it.getFirstParentWithDistance().first }
-                    val pointsToGive = remainingPoints / combinedNestLevels
-                    weakestMembers.giveToEachAndStabilize(pointsToGive)
-                    break
                 }
             }
             else
             {
                 log("### Smallest step does not exist")
-                val combinedNestLevels = weakestMembers.sumOf { it.getFirstParentWithDistance().first }
-                val pointsToGive = remainingPoints / combinedNestLevels
-                weakestMembers.giveToEachAndStabilize(pointsToGive)
-                break
             }
+
+            val combinedNestLevels = weakestMembers.sumOf { it.getFirstParentWithDistance().first }
+            val pointsToGive = remainingPoints / combinedNestLevels
+            weakestMembers.giveToEachAndStabilize(pointsToGive)
+            break
         }
 
         log("FINAL CREW: ")
@@ -156,25 +153,26 @@ class Solver(val crew: Crew)
     private fun branchStabilisationPointsNeeded(member: Member, memberPointsOffset: Long = 0): Long
     {
         var totalPointsNeeded = 0L
+        var currentMember = member
+        var currentOffset = memberPointsOffset
 
-        fun branchStabilisationPointsNeededRec(member: Member, memberPointsOffset: Long)
+        while (true)
         {
-            val parent = member.parent ?: return
+            val parent = currentMember.parent ?: break
 
             val parentPoints = parent.points
-            val memberPoints = member.points + memberPointsOffset
+            val memberPoints = currentMember.points + currentOffset
 
             if (parentPoints <= memberPoints)
             {
                 val neededPoints = memberPoints - parentPoints + 1
                 totalPointsNeeded += neededPoints
-                branchStabilisationPointsNeededRec(parent, neededPoints)
+                currentMember = parent
+                currentOffset = neededPoints
             }
             else
-                return
+                break
         }
-
-        branchStabilisationPointsNeededRec(member, memberPointsOffset)
 
         return totalPointsNeeded
     }
