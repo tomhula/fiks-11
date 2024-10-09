@@ -1,4 +1,4 @@
-val debugEnabled = true
+val debugEnabled = false
 
 fun log(message: Any)
 {
