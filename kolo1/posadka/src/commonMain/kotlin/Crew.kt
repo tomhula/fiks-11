@@ -4,7 +4,6 @@ class Crew(
 )
 {
     var remainingPoints = availablePoints
-    val leader = members.find { it.parent == null } ?: throw IllegalStateException("No leader found")
     val leafMembers = members.filter { it.children.isEmpty() }.toSet()
     val size = members.size
 

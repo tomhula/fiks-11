@@ -8,6 +8,7 @@ fun main()
 
         try
         {
+//            println("Solving $i (${(i*3-1)})")
             val weakestMemberPoints = solver.solve()
             println(weakestMemberPoints)
         }
