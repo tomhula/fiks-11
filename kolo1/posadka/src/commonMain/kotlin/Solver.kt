@@ -231,14 +231,31 @@ class Solver(val crew: Crew)
     }
 
     /**
-     * Calls [stabiliseBranch] on leaf members.
      * @throws OutOfPointsException when running out of points without reaching stability
      */
     private fun stabilise(crew: Crew)
     {
         for (leafMember in crew.leafMembers)
-        /* branchStabilisationPointsNeeded check not needed, because the crew ends once it is impossible to stabilise */
-            crew.remainingPoints = stabiliseEntireBranch(leafMember, crew.remainingPoints)
+        {
+            var currentMember = leafMember
+
+            while (currentMember.parent != null)
+            {
+                val currentParent = currentMember.parent!!
+                val currentMemberPoints = currentMember.points
+                val currentParentPoints = currentParent.points
+
+                if (currentParentPoints <= currentMemberPoints)
+                {
+                    val neededPoints = currentMemberPoints - currentParentPoints + 1
+                    if (remainingPoints < neededPoints)
+                        throw OutOfPointsException()
+                    currentParent.givePoints(neededPoints)
+                }
+
+                currentMember = currentParent
+            }
+        }
     }
 
     /**
@@ -269,31 +286,6 @@ class Solver(val crew: Crew)
             else
                 return remainingPoints
         }
-        else
-            return remainingPoints
-    }
-
-    private fun stabiliseEntireBranch(member: Member, availablePoints: Long): Long
-    {
-        val parent = member.parent
-        var remainingPoints = availablePoints
-
-        if (parent == null)
-            return remainingPoints
-
-        if (parent.points <= member.points)
-        {
-            val neededPoints = member.points - parent.points + 1
-            if (remainingPoints < neededPoints)
-                throw OutOfPointsException()
-            parent.givePoints(neededPoints)
-            remainingPoints -= neededPoints
-
-
-        }
-
-        if (parent.parent != null)
-            return stabiliseEntireBranch(parent, remainingPoints)
         else
             return remainingPoints
     }
