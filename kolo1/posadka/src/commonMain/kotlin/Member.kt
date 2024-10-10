@@ -6,6 +6,7 @@ data class Member(
 )
 {
     val isLeader = parent == null
+    val isLeaf = children.isEmpty()
     val signature
         get() = "$points${(index + 1).toSuperScriptString()}"
 

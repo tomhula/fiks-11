@@ -1,18 +1,7 @@
 class Solver(val crew: Crew)
 {
-    private val leafMembersSorted = crew.leafMembers.sortedBy { it.points }.toMutableList()
-    private val weakestPoints
-        get() = leafMembersSorted.first().points
-    private val weakestMembers = leafMembersSorted.takeWhile { it.points == weakestPoints }.toMutableSet()
-    private val weakestMembersCount
-        get() = weakestMembers.size
-
-    private val secondWeakestPoints
-        get() = leafMembersSorted.drop(weakestMembers.size).firstOrNull()?.points
-    private var secondWeakestMembers =
-        leafMembersSorted.drop(weakestMembers.size).takeWhile { it.points == secondWeakestPoints }.toMutableSet()
-    private val secondWeakestMembersCount
-        get() = secondWeakestMembers.size
+    private val membersSorted = crew.members.sortedBy { it.points }
+    private val leafMembersSorted = membersSorted.filter { it.children.isEmpty() }
 
     private var remainingPoints
         get() = crew.remainingPoints
@@ -25,127 +14,87 @@ class Solver(val crew: Crew)
     {
         stabilise(crew)
         log("leader: ${crew.leader}")
+        log("STABILISED CREW:")
+        log(crew)
 
-        if (crew.size == 1)
+        val activeMembers = mutableSetOf<Member>()
+        val remainingLeafMembers = leafMembersSorted.toMutableSet()
+        var surfaceMembers = mutableSetOf<Member>()
+        var weakestPoints = leafMembersSorted.first().points
+
+        for (member in leafMembersSorted)
         {
-            crew.leader.givePoints(crew.remainingPoints)
-            return crew.leader.points
+            if (member.points == weakestPoints)
+            {
+                activeMembers.add(member)
+                if (member.isLeaf)
+                    remainingLeafMembers.remove(member)
+                surfaceMembers.add(member)
+            }
         }
+
+        log("leaf members: ${leafMembersSorted.joinToString { it.signature }}")
 
         while (true)
         {
-            log("CREW: ")
-            log(crew)
-            log("weakestMembers: $weakestMembers")
+            log("active members: ${activeMembers.joinToString { it.signature }}")
+            log("surface members: ${surfaceMembers.joinToString { it.signature }}")
+            log("remaining leaf members: ${remainingLeafMembers.joinToString { it.signature }}")
+            log("weakest points: $weakestPoints")
 
-            val secondWeakestMemberExists = secondWeakestMembers.isNotEmpty()
+            var target: Member? = null
+            var smallestStep: Long? = null
 
-            if (secondWeakestMemberExists)
+            for (leafMember in remainingLeafMembers)
             {
-                log("### Second weakest member exists ($secondWeakestMembers)")
-                val catchupDistance = secondWeakestPoints!! - weakestPoints
-                val pointsNeeded = branchStabilisationPointsNeeded(weakestMembers, catchupDistance) + catchupDistance * weakestMembersCount
-                val catchupPossible = pointsNeeded <= remainingPoints
+                val step = leafMember.points - weakestPoints
 
-                log("catchupDistance: $catchupDistance")
-
-                if (catchupPossible)
+                if (smallestStep == null || step < smallestStep)
                 {
-                    log("### Catchup possible")
-                    weakestMembers.giveToEachAndStabilize(catchupDistance)
-                    weakestMembers.addAll(secondWeakestMembers)
-                    recalSecondWeakestMembers()
-                    continue
+                    target = leafMember
+                    smallestStep = step
                 }
             }
 
-            log("### Second weakest member does not exist")
-            val smallestStep = findSmallestStep()
-
-            if (smallestStep != null)
+            for (surfaceMember in surfaceMembers)
             {
-                log("### Smallest step exists")
-                val combinedNestLevels = weakestMembers.sumOf { it.getFirstParentWithDistance().first }
-                val toSub = findNearParentsOccurrenceCount(weakestMembers).values.sumOf { it - 1 }
-                val pointsNeeded = (combinedNestLevels - toSub) * smallestStep
-                val stepPossible = pointsNeeded <= remainingPoints
+                val step = surfaceMember.distanceToBelowParent
 
-                log("smallestStep: $smallestStep")
-
-                if (stepPossible)
+                if (step != null && (smallestStep == null || step < smallestStep))
                 {
-                    log("### Step possible")
-                    weakestMembers.giveToEachAndStabilize(smallestStep)
-                    continue
-                }
-                else
-                {
-                    log("### Step not possible")
+                    target = surfaceMember.parent
+                    smallestStep = step
                 }
             }
-            else
+
+            log("Target is: $target with a step of $smallestStep")
+
+            if (target == null || smallestStep == null)
             {
-                log("### Smallest step does not exist")
+                val pointsToGive = remainingPoints / activeMembers.size
+                return weakestPoints + pointsToGive
             }
 
-            val combinedNestLevels = weakestMembers.sumOf { it.getFirstParentWithDistance().first }
-            val toSub = findNearParentsOccurrenceCount(weakestMembers).values.sumOf { it - 1 }
-            val pointsToGive = remainingPoints / (combinedNestLevels - toSub)
-            weakestMembers.giveToEachAndStabilize(pointsToGive)
-            break
-        }
+            val neededPoints = smallestStep * activeMembers.size
 
-        log("FINAL CREW: ")
-        log(crew)
-
-        return leafMembersSorted.first().points
-    }
-
-    private fun findNearParentsOccurrenceCount(members: Iterable<Member>): Map<Member, Int>
-    {
-        val parents = mutableMapOf<Member, Int>()
-
-        for (member in members)
-        {
-            var currentMember = member
-
-            while (true)
+            if (remainingPoints < neededPoints)
             {
-                val currentParent = currentMember.parent ?: break
-                if (currentMember.distanceToBelowParent != 0L)
-                    break
-
-                parents[currentParent] = (parents[currentParent] ?: 0) + 1
-                currentMember = currentParent
+                val pointsToGive = remainingPoints / activeMembers.size
+                return weakestPoints + pointsToGive
             }
+
+            activeMembers.giveToEach(smallestStep)
+            weakestPoints += smallestStep
+
+            activeMembers.add(target)
+            if (target.isLeaf)
+                remainingLeafMembers.remove(target)
+
+            surfaceMembers.add(target)
+            surfaceMembers.removeAll(target.children)
         }
 
-        return parents
-    }
-
-    private fun findSmallestStep(): Long?
-    {
-        var smallestStep: Long? = null
-
-        for (weakestMember in weakestMembers)
-        {
-            val step = weakestMember.getFirstParentWithDistance().second ?: continue
-            if (smallestStep == null || step < smallestStep)
-                smallestStep = step
-        }
-
-        return smallestStep
-    }
-
-    private fun recalSecondWeakestMembers()
-    {
-        val secondWeakestPoints = leafMembersSorted.drop(weakestMembersCount).firstOrNull()?.points
-        if (secondWeakestPoints != null)
-            secondWeakestMembers =
-                leafMembersSorted.drop(weakestMembersCount).takeWhile { it.points == secondWeakestPoints }
-                    .toMutableSet()
-        else
-            secondWeakestMembers = mutableSetOf()
+        return weakestPoints
     }
 
     /** Gives [amount] of points from [remainingPoints] to this member and returns its new total points. */
@@ -160,75 +109,8 @@ class Solver(val crew: Crew)
         return points
     }
 
-    private fun Member.givePointsAndStabilise(amount: Long)
-    {
-        givePoints(amount)
-        remainingPoints = stabiliseBranch(this, remainingPoints)
-    }
-
-    private fun Iterable<Member>.giveToEachAndStabilize(amount: Long) = forEach { it.givePointsAndStabilise(amount) }
-
     /** Gives each [Member] [amount] of points from [remainingPoints]. */
     private fun Iterable<Member>.giveToEach(amount: Long) = forEach { it.givePoints(amount) }
-
-    private fun branchStabilisationPointsNeeded(member: Member, memberPointsOffset: Long = 0): Long
-    {
-        var totalPointsNeeded = 0L
-        var currentMember = member
-        var currentOffset = memberPointsOffset
-
-        while (true)
-        {
-            val parent = currentMember.parent ?: break
-
-            val parentPoints = parent.points
-            val memberPoints = currentMember.points + currentOffset
-
-            if (parentPoints <= memberPoints)
-            {
-                val neededPoints = memberPoints - parentPoints + 1
-                totalPointsNeeded += neededPoints
-                currentMember = parent
-                currentOffset = neededPoints
-            }
-            else
-                break
-        }
-
-        return totalPointsNeeded
-    }
-
-    private fun branchStabilisationPointsNeeded(members: Iterable<Member>, memberPointsOffset: Long = 0): Long
-    {
-        var totalPointsNeeded = 0L
-
-        val offsets = members.associateWith { memberPointsOffset }.toMutableMap()
-
-        for (member in members)
-        {
-            var currentMember = member
-
-            while (true)
-            {
-                val parent = currentMember.parent ?: break
-
-                val parentPoints = parent.points + offsets.getOrElse(parent) { 0 }
-                val memberPoints = currentMember.points + offsets.getOrElse(member) { 0 }
-
-                if (parentPoints <= memberPoints)
-                {
-                    val neededPoints = memberPoints - parentPoints + 1
-                    totalPointsNeeded += neededPoints
-                    offsets[parent] = (offsets[parent] ?: 0) + neededPoints
-                    currentMember = parent
-                }
-                else
-                    break
-            }
-        }
-
-        return totalPointsNeeded
-    }
 
     /**
      * @throws OutOfPointsException when running out of points without reaching stability

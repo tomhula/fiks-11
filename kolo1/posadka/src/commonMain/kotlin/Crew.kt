@@ -1,5 +1,5 @@
 class Crew(
-    private val members: Array<Member>,
+    val members: Array<Member>,
     availablePoints: Long
 )
 {
