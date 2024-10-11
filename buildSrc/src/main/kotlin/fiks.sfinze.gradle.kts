@@ -1,9 +1,7 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmRun
-
 plugins {
-    kotlin("multiplatform")
+    kotlin("jvm")
+    id("com.gradleup.shadow")
+    application
 }
 
 group = "me.tomasan7"
@@ -13,37 +11,17 @@ repositories {
     mavenCentral()
 }
 
-kotlin {
-    val hostOs = System.getProperty("os.name")
-    val isArm64 = System.getProperty("os.arch") == "aarch64"
-    val isMingwX64 = hostOs.startsWith("Windows")
-    val nativeTarget = when
-    {
-        hostOs == "Mac OS X" && isArm64 -> macosArm64("native")
-        hostOs == "Mac OS X" && !isArm64 -> macosX64("native")
-        hostOs == "Linux" && isArm64 -> linuxArm64("native")
-        hostOs == "Linux" && !isArm64 -> linuxX64("native")
-        isMingwX64 -> mingwX64("native")
-        else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
-    }
+application {
+    mainClass = "MainKt"
+}
 
-    nativeTarget.apply {
-        binaries {
-            executable {
-                entryPoint = "main"
-                runTask?.standardInput = System.`in`
-            }
-        }
-    }
-
-    jvm {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        mainRun {
-            mainClass = "MainKt"
-        }
+tasks {
+    shadowJar {
+        archiveFileName = project.name + ".jar"
     }
 }
 
+/*
 tasks {
     @OptIn(InternalKotlinGradlePluginApi::class)
     withType<KotlinJvmRun> {
@@ -58,8 +36,6 @@ tasks {
                 println("Using ${inputFile.name} as standard input.")
         }
     }
-
-    val nativeMainBinaries by getting
 
     val testInputOutput by registering {
         group = "verification"
@@ -109,9 +85,9 @@ tasks {
                 else
                     throw GradleException("""
                         |Test failed for ${inputFile.name}:
-                        |EXPECTED: 
+                        |EXPECTED:
                         |$expectedOutput
-                        |GOT:      
+                        |GOT:
                         |$actualOutput
                     """.trimMargin()
                     )
@@ -119,4 +95,5 @@ tasks {
         }
     }
 }
+*/
 
