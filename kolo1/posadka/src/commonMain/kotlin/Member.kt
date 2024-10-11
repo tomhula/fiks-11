@@ -1,53 +1,10 @@
 data class Member(
     val index: Int,
-    var points: Long,
-    val parent: Member?,
-    val children: Set<Member>
+    val parentIndex: Int?,
+    var points: Long
 )
 {
-    val isLeader = parent == null
-    val isLeaf = children.isEmpty()
-    val signature
-        get() = "$points${(index + 1).toSuperScriptString()}"
-
-    val distanceToBelowParent
-        get() = parent?.points?.minus(points)?.minus(1)
-
-    fun getParent(depth: Int): Member?
-    {
-        var current = this
-        repeat(depth) {
-            current = current.parent ?: return null
-        }
-        return current
-    }
-
-    /** Parent depth (1 = direct parent) to the distance */
-    fun getFirstParentWithDistance(): Pair<Int, Long?>
-    {
-        if (parent == null)
-            return 1 to null
-
-        var current = this
-        var currentDepth = 1
-        var currentDistance = distanceToBelowParent
-
-        while(currentDistance == 0L)
-        {
-            current = current.parent ?: return currentDepth to null
-            currentDepth++
-            currentDistance = current.distanceToBelowParent
-        }
-
-        return currentDepth to currentDistance
-    }
-
-    override fun toString() = buildString {
-
-        append(signature)
-        if (children.isNotEmpty())
-            append("<").append(children.joinToString(separator = ",") { it.signature })
-    }
+    override fun toString() = "$points${(index + 1).toSuperScriptString()}"
 
     override fun equals(other: Any?): Boolean
     {

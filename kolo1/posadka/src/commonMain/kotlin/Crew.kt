@@ -1,66 +1,21 @@
 class Crew(
     val members: Array<Member>,
-    availablePoints: Long
+    val membersSorted: Array<Member>,
+    val leafMembersMask: BooleanArray,
+    var availablePoints: Long,
 )
 {
-    var remainingPoints = availablePoints
-    val leafMembers = members.filter { it.children.isEmpty() }.toSet()
     val size = members.size
 
-    fun getMemberByIndex(index: Int) = members[index]
+    fun getParentOf(member: Member) = member.parentIndex?.let { members[member.parentIndex] }
 
-    override fun toString() = "[[$remainingPoints]]\n" + members.joinToString(separator = "\n")
+    fun isLeaf(member: Member) = leafMembersMask[member.index]
 
-    class Builder(crewSize: Int, private val availablePoints: Long)
+    fun getDistanceToBelowParent(member: Member): Long?
     {
-        private val preMembers = Array<PreMember?>(crewSize) { null }
-        private val preMembersChildren = Array<MutableSet<PreMember>>(crewSize) { mutableSetOf() }
-        private lateinit var leader: PreMember
-
-        fun addMember(index: Int, parentIndex: Int, points: Long)
-        {
-            val preMember = PreMember(index, parentIndex, points)
-            preMembers[index] = preMember
-
-            if (preMember.parentIndex >= 0)
-                preMembersChildren[parentIndex].add(preMember)
-            else
-                leader = preMember
-        }
-
-        fun build(): Crew
-        {
-            val preMembers = this.preMembers as Array<PreMember>
-            val size = preMembers.size
-            val members = arrayOfNulls<Member?>(size)
-
-            fun getOrCreateMember(preMember: PreMember): Member
-            {
-                val member = members[preMember.index] ?: if (preMember.parentIndex < 0)
-                    Member(preMember.index, preMember.points, null, mutableSetOf())
-                else
-                    members[preMember.index] ?: Member(
-                        preMember.index,
-                        preMember.points,
-                        getOrCreateMember(preMembers[preMember.parentIndex]),
-                        mutableSetOf()
-                    )
-
-                members[member.index] = member
-                return member
-            }
-
-            for (preMember in preMembers)
-            {
-                val member = getOrCreateMember(preMember)
-                (member.children as MutableSet).addAll(preMembersChildren[member.index].map { getOrCreateMember(it) })
-            }
-
-            return Crew(members as Array<Member>, availablePoints)
-        }
-
-        private data class PreMember(val index: Int, val parentIndex: Int, val points: Long)
+        val parent = getParentOf(member) ?: return null
+        return parent.points - member.points - 1
     }
-}
 
-fun buildCrew(crewSize: Int, availablePoint: Long, block: Crew.Builder.() -> Unit) = Crew.Builder(crewSize, availablePoint).apply(block).build()
+    override fun toString() = "[[$availablePoints]]\n" + members.joinToString(separator = "\n")
+}

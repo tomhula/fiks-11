@@ -1,21 +1,20 @@
 class Solver(val crew: Crew)
 {
-    private val membersSorted = crew.members.sortedBy { it.points }
-    private val leafMembersSorted = membersSorted.filter { it.children.isEmpty() }
+    private val leafMembersSorted = crew.membersSorted.filter { crew.leafMembersMask[it.index] }
 
     private var remainingPoints
-        get() = crew.remainingPoints
+        get() = crew.availablePoints
         set(value)
         {
-            crew.remainingPoints = value
+            crew.availablePoints = value
         }
 
     fun solve(): Long
     {
-        stabilise(crew)
+        stabilise()
 
         val activeMembers = mutableSetOf<Member>()
-        val remainingLeafMembers = leafMembersSorted.toMutableSet()
+        val remainingLeafMembers = leafMembersSorted.toMutableList()
         val surfaceMembers = mutableSetOf<Member>()
         var weakestPoints = leafMembersSorted.first().points
 
@@ -24,8 +23,7 @@ class Solver(val crew: Crew)
             if (member.points == weakestPoints)
             {
                 activeMembers.add(member)
-                if (member.isLeaf)
-                    remainingLeafMembers.remove(member)
+                remainingLeafMembers.remove(member)
                 surfaceMembers.add(member)
             }
         }
@@ -36,24 +34,21 @@ class Solver(val crew: Crew)
             var targetChild: Member? = null
             var smallestStep: Long? = null
 
-            for (leafMember in remainingLeafMembers)
-            {
-                val step = leafMember.points - weakestPoints
+            val firstRemainingLeafMember = remainingLeafMembers.firstOrNull()
 
-                if (smallestStep == null || step < smallestStep)
-                {
-                    target = leafMember
-                    smallestStep = step
-                }
+            if (firstRemainingLeafMember != null)
+            {
+                target = firstRemainingLeafMember
+                smallestStep = firstRemainingLeafMember.points - weakestPoints
             }
 
             for (surfaceMember in surfaceMembers)
             {
-                val step = surfaceMember.distanceToBelowParent
+                val step = crew.getDistanceToBelowParent(surfaceMember)
 
                 if (step != null && (smallestStep == null || step < smallestStep))
                 {
-                    target = surfaceMember.parent
+                    target = crew.getParentOf(surfaceMember)
                     targetChild = surfaceMember
                     smallestStep = step
                 }
@@ -71,7 +66,7 @@ class Solver(val crew: Crew)
             weakestPoints += smallestStep
 
             activeMembers.add(target)
-            if (target.isLeaf)
+            if (crew.isLeaf(target))
                 remainingLeafMembers.remove(target)
 
             surfaceMembers.add(target)
@@ -94,15 +89,15 @@ class Solver(val crew: Crew)
     /**
      * @throws OutOfPointsException when running out of points without reaching stability
      */
-    private fun stabilise(crew: Crew)
+    private fun stabilise()
     {
-        for (leafMember in crew.leafMembers)
+        for (leafMember in leafMembersSorted)
         {
             var currentMember = leafMember
 
-            while (currentMember.parent != null)
+            while (crew.getParentOf(currentMember) != null)
             {
-                val currentParent = currentMember.parent!!
+                val currentParent = crew.getParentOf(currentMember)!!
                 val currentMemberPoints = currentMember.points
                 val currentParentPoints = currentParent.points
 

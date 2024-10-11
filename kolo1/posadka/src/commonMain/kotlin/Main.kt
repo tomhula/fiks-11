@@ -8,7 +8,6 @@ fun main()
 
         try
         {
-//            println("Solving $i (${(i*3-1)})")
             val weakestMemberPoints = solver.solve()
             println(weakestMemberPoints)
         }
@@ -31,12 +30,27 @@ fun parseInput(): List<Crew>
         val pointsLine = readLongs()
         val parentsLine = readInts()
 
-        val crew = buildCrew(numOfMembers, availablePoints) {
-            for (i in 0..<numOfMembers)
-                addMember(i, parentsLine[i] - 1, pointsLine[i])
+        val members = Array<Member?>(numOfMembers) { null }
+        val membersSorted = Array<Member?>(numOfMembers) { null }
+        val leafMembersMask = BooleanArray(numOfMembers) { true }
+
+        repeat(numOfMembers) { i ->
+            val parentIndex = if (parentsLine[i] == -1) null else parentsLine[i] - 1
+            val member = Member(i, parentIndex, pointsLine[i])
+            members[i] = member
+            if (parentIndex != null)
+                leafMembersMask[parentIndex] = false
+
+            // Insert member into the correct position in membersSorted to keep it sorted
+            var j = i
+            while (j > 0 && membersSorted[j - 1]!!.points > member.points) {
+                membersSorted[j] = membersSorted[j - 1]
+                j--
+            }
+            membersSorted[j] = member
         }
 
-        crews.add(crew)
+        crews.add(Crew(members.requireNoNulls(), membersSorted.requireNoNulls(), leafMembersMask, availablePoints))
     }
 
     return crews
