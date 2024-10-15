@@ -9,3 +9,6 @@ project(":trasa").projectDir = file("kolo1/trasa")
 
 include("posadka")
 project(":posadka").projectDir = file("kolo1/posadka")
+
+include("zavody")
+project(":zavody").projectDir = file("kolo2/zavody")
