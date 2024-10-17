@@ -4,9 +4,14 @@ fun main()
 {
     val races = parseInput()
 
-    for (race in races)
+    for ((i, race) in races.withIndex())
     {
-        val result = Solver(race).solve()
+        /* Only try to solve the first 30 problems, since the following 10 are harder and won't be done on time */
+        val result = if (i <= 29)
+            Solver(race).solve()
+        else
+            -1
+
         println(result)
     }
 }
@@ -54,19 +59,4 @@ fun parseInput(): List<Race>
     }
 
     return races
-}
-
-class Race(
-    val minStepTime: Int,
-    val initialStepTime: Int,
-    val maxStepTime: Int,
-    val size: IntVector,
-    val sectors: Array<Array<Array<Sector?>>>,
-    val startSector: Sector.Start,
-    val endSector: Sector.End
-)
-{
-    operator fun contains(pos: IntVector) = pos.x in 0..<size.x
-            && pos.y in 0..<size.y
-            && pos.z in 0..<size.z
 }

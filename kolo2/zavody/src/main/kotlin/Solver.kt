@@ -9,14 +9,14 @@ class Solver(val race: Race)
     fun solve(): Int
     {
         buildGraph()
-        return algo()
+        return findBestPossibleTime()
     }
 
-    private fun algo(): Int
+    private fun findShortestTimeDumb(): Int
     {
         val dist = mutableMapOf<Node, NodeMeta>().withDefault { NodeMeta(Int.MAX_VALUE, race.initialStepTime) }
         val prev = mutableMapOf<Node, Node?>()
-        val priorityQueue = PriorityQueue<Node>(compareBy { dist.getValue(it).timeToGetTo })
+        val priorityQueue = PriorityQueue<Node>(compareBy { dist.getValue(it).time })
 
         dist[startNode] = NodeMeta(0, race.initialStepTime)
         priorityQueue.add(startNode)
@@ -24,42 +24,65 @@ class Solver(val race: Race)
         while (priorityQueue.isNotEmpty())
         {
             val currentNode = priorityQueue.poll()
-
-            //if (currentNode == endNode) break
-
             val currentMeta = dist.getValue(currentNode)
-
             for (neighbor in graph[currentNode] ?: emptyList())
             {
-                val timeToGetTo = currentMeta.timeToGetTo + currentMeta.stepTime
-                if (timeToGetTo < dist.getValue(neighbor).timeToGetTo)
+                val time = currentMeta.time + currentMeta.stepTime
+                if (time < dist.getValue(neighbor).time)
                 {
                     val newStepTime = currentMeta.stepTime + (neighbor.speedSector?.stepTimeModifier ?: 0)
                     val newStepTimeFinal = if (newStepTime > race.maxStepTime || newStepTime < race.minStepTime)
                         currentMeta.stepTime
                     else
                         newStepTime
-                    dist[neighbor] = NodeMeta(timeToGetTo, newStepTimeFinal)
+                    dist[neighbor] = NodeMeta(time, newStepTimeFinal)
                     prev[neighbor] = currentNode
                     priorityQueue.add(neighbor)
                 }
             }
         }
 
-        // Reconstruct the shortest path
-        val path = LinkedList<Node>()
-        var pathNode: Node? = endNode
-        while (pathNode != null)
+        return dist[endNode]!!.time
+    }
+
+    private fun findBestPossibleTime(): Int
+    {
+        val dist = mutableMapOf<Node, NodeMeta>()
+        dist[startNode] = NodeMeta(0, race.initialStepTime)
+        val terminatorTime = findShortestTimeDumb()
+
+        fun explore(node: Node, time: Int, stepTime: Int)
         {
-            path.addFirst(pathNode)
-            pathNode = prev[pathNode]
+            val neighbours = graph[node] ?: return
+
+            if (node == endNode)
+                return
+
+            val newPossibleStepTime = stepTime + (node.speedSector?.stepTimeModifier ?: 0)
+            val newStepTime = if (newPossibleStepTime in race.stepTimeRange)
+                newPossibleStepTime
+            else
+                stepTime
+
+            for (neighbour in neighbours)
+            {
+                val neighbourMeta = dist[neighbour] ?: NodeMeta(Int.MAX_VALUE, Int.MAX_VALUE)
+                val neighbourTime = time + newStepTime
+                val newPathMeta = NodeMeta(neighbourTime, newStepTime)
+
+                if (neighbourTime > terminatorTime)
+                    return
+
+                if (!neighbourMeta.isSurelyBetter(newPathMeta))
+                {
+                    dist[neighbour] = newPathMeta
+                    explore(neighbour, neighbourTime, newStepTime)
+                }
+            }
         }
 
-        // Print the shortest path
-        /*println("Shortest path: ${path.joinToString(" -> ") { it.pos.toString() }}")
-        println("Shortest distance: ${dist[endNode]}")*/
-
-        return dist[endNode]!!.timeToGetTo
+        explore(startNode, 0, race.initialStepTime)
+        return dist[endNode]?.time ?: -1
     }
 
     private fun buildGraph()
@@ -96,27 +119,22 @@ class Solver(val race: Race)
                     for (neighborPos in pos.neighbours)
                     {
                         val neighbourNode = neighborPos.toNode() ?: continue
-                        if (::startNode.isInitialized && neighbourNode.pos == startNode.pos)
-                            continue
                         adjacentNodes.add(neighbourNode)
                         graph[node] = adjacentNodes
                     }
                 }
     }
 
-    private fun printGraph()
+    private data class NodeMeta(val time: Int, val stepTime: Int)
     {
-        graph.forEach { (node, neighbours) ->
-            println("${node.pos} -> ${neighbours.joinToString { it.pos.toString() }}")
-        }
+        fun isSurelyBetter(other: NodeMeta) =
+            this.time < other.time && this.stepTime < other.stepTime
+                    || this.time == other.time && this.stepTime < other.stepTime
+                    || this.stepTime == other.stepTime && this.time < other.time
     }
-
-    private data class NodeMeta(val timeToGetTo: Int, val stepTime: Int)
 
     private data class Node(val pos: IntVector, val speedSector: Sector.Speed? = null)
     {
-        constructor(sector: Sector) : this(sector.pos)
-
         override fun equals(other: Any?): Boolean
         {
             if (this === other) return true

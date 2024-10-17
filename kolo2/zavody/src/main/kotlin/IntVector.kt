@@ -1,20 +1,26 @@
 data class IntVector(val x: Int, val y: Int, val z: Int)
 {
-    val above: IntVector
-        get() = IntVector(x, y + 1, z)
-    val below: IntVector
-        get() = IntVector(x, y - 1, z)
-    val front: IntVector
-        get() = IntVector(x, y, z + 1)
-    val back: IntVector
-        get() = IntVector(x, y, z - 1)
-    val left: IntVector
-        get() = IntVector(x - 1, y, z)
-    val right: IntVector
-        get() = IntVector(x + 1, y, z)
+    val above: IntVector by lazy { IntVector(x, y + 1, z) }
+    val below: IntVector by lazy { IntVector(x, y - 1, z) }
+    val front: IntVector by lazy { IntVector(x, y, z + 1) }
+    val back: IntVector by lazy { IntVector(x, y, z - 1) }
+    val left: IntVector by lazy { IntVector(x - 1, y, z) }
+    val right: IntVector by lazy { IntVector(x + 1, y, z) }
 
-    val neighbours: List<IntVector>
-        get() = listOf(above, below, front, back, left, right)
+    /* All non-diagonal neighbour vectors */
+    val neighbours: List<IntVector> by lazy { listOf(above, below, front, back, left, right) }
+
+    /* Used for debugging */
+    fun getCloseRelativeDirection(other: IntVector) = when (other)
+    {
+        above -> "UP"
+        below -> "DOWN"
+        front -> "FORWARD"
+        back -> "BACK"
+        left -> "LEFT"
+        right -> "RIGHT"
+        else -> "???"
+    }
 
     operator fun plus(other: IntVector) = IntVector(x + other.x, y + other.y, z + other.z)
     operator fun minus(other: IntVector) = IntVector(x - other.x, y - other.y, z - other.z)
