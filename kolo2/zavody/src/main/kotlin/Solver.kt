@@ -12,7 +12,7 @@ class Solver(val race: Race)
         return findBestPossibleTime()
     }
 
-    private fun findShortestTimeDumb(): Int
+    private fun findShortestTimeDumb(startNode: Node, endNode: Node): Int
     {
         val dist = mutableMapOf<Node, NodeMeta>().withDefault { NodeMeta(Int.MAX_VALUE, race.initialStepTime) }
         val prev = mutableMapOf<Node, Node?>()
@@ -49,7 +49,7 @@ class Solver(val race: Race)
     {
         val dist = mutableMapOf<Node, NodeMeta>()
         dist[startNode] = NodeMeta(0, race.initialStepTime)
-        val terminatorTime = findShortestTimeDumb()
+        val terminatorTime = findShortestTimeDumb(startNode, endNode)
 
         fun explore(node: Node, time: Int, stepTime: Int)
         {
@@ -87,12 +87,22 @@ class Solver(val race: Race)
 
     private fun buildGraph()
     {
+        val (newSize, newSpaceOrigin) = determineSpace()
+
+        val newSpace = Array(newSize.x) { Array(newSize.y) { Array(newSize.z) { null as Sector? } } }
+
+        for (sector in race.sectors)
+        {
+            val newSpacePos = sector.pos - newSpaceOrigin
+            newSpace[newSpacePos.x][newSpacePos.y][newSpacePos.z] = sector.copy(newSpacePos)
+        }
+
         fun IntVector.toNode(): Node?
         {
-            if (this !in race)
+            if (this !in newSpace)
                 return null
 
-            return when (val sector = race.sectors[x][y][z])
+            return when (val sector = newSpace[x][y][z])
             {
                 is Sector.Speed -> Node(this, sector)
                 is Sector.NoGo -> null
@@ -100,11 +110,11 @@ class Solver(val race: Race)
             }
         }
 
-        for (x in 0..<race.size.x)
-            for (y in 0..<race.size.y)
-                for (z in 0..<race.size.z)
+        for (x in 0..<newSize.x)
+            for (y in 0..<newSize.y)
+                for (z in 0..<newSize.z)
                 {
-                    val sector = race.sectors[x][y][z]
+                    val sector = newSpace[x][y][z]
                     val pos = IntVector(x, y, z)
 
                     val node = pos.toNode() ?: continue
@@ -125,27 +135,63 @@ class Solver(val race: Race)
                 }
     }
 
-    private data class NodeMeta(val time: Int, val stepTime: Int)
+    private fun determineSpace(): Pair<IntVector, IntVector>
     {
-        fun isSurelyBetter(other: NodeMeta) =
-            this.time < other.time && this.stepTime < other.stepTime
-                    || this.time == other.time && this.stepTime < other.stepTime
-                    || this.stepTime == other.stepTime && this.time < other.time
-    }
+        var minX = race.size.x
+        var maxX = -1
+        var minY = race.size.y
+        var maxY = -1
+        var minZ = race.size.z
+        var maxZ = -1
 
-    private data class Node(val pos: IntVector, val speedSector: Sector.Speed? = null)
-    {
-        override fun equals(other: Any?): Boolean
+        for (sector in race.sectors)
         {
-            if (this === other) return true
-            if (other !is Node) return false
-
-            if (pos != other.pos) return false
-            if (speedSector != other.speedSector) return false
-
-            return true
+            val pos = sector.pos
+            /* Only NoGo sectors have padding, if we did not,
+            we couldn't go around it. (which would originally be possible */
+            val padding = if (sector is Sector.NoGo) 1 else 0
+            minX = minOf(minX, pos.x - padding)
+            maxX = maxOf(maxX, pos.x + padding)
+            minY = minOf(minY, pos.y - padding)
+            maxY = maxOf(maxY, pos.y + padding)
+            minZ = minOf(minZ, pos.z - padding)
+            maxZ = maxOf(maxZ, pos.z + padding)
         }
 
-        override fun hashCode() = pos.hashCode()
+        minX = maxOf(minX, 0)
+        maxX = minOf(maxX, race.size.x - 1)
+        minY = maxOf(minY, 0)
+        maxY = minOf(maxY, race.size.y - 1)
+        minZ = maxOf(minZ, 0)
+        maxZ = minOf(maxZ, race.size.z - 1)
+
+        val newSize = IntVector(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1)
+        /* The new space's origin place in the old space */
+        val newSpaceOrigin = IntVector(minX, minY, minZ)
+        return Pair(newSize, newSpaceOrigin)
     }
+}
+
+private data class NodeMeta(val time: Int, val stepTime: Int)
+{
+    fun isSurelyBetter(other: NodeMeta) =
+        this.time < other.time && this.stepTime < other.stepTime
+                || this.time == other.time && this.stepTime < other.stepTime
+                || this.stepTime == other.stepTime && this.time < other.time
+}
+
+private data class Node(val pos: IntVector, val speedSector: Sector.Speed? = null)
+{
+    override fun equals(other: Any?): Boolean
+    {
+        if (this === other) return true
+        if (other !is Node) return false
+
+        if (pos != other.pos) return false
+        if (speedSector != other.speedSector) return false
+
+        return true
+    }
+
+    override fun hashCode() = pos.hashCode()
 }

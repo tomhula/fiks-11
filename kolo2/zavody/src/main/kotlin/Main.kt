@@ -4,15 +4,15 @@ fun main()
 {
     val races = parseInput()
 
-    for ((i, race) in races.withIndex())
-    {
+     for ((i, race) in races.withIndex())
+     {
         /* Only try to solve the first 30 problems, since the following 10 are harder and won't be done on time */
-        val result = if (i <= 29)
-            Solver(race).solve()
-        else
-            -1
+        //val result = if (i <= 29)
+         val solve = Solver(race).solve()
+         //else
+        //    -1
 
-        println(result)
+        println("$i: $solve")
     }
 }
 
@@ -25,7 +25,7 @@ fun parseInput(): List<Race>
         val (minStepTime, maxStepTime, initialStepTime) = readInts()
         val (width, height, depth, nodeCount) = readInts()
 
-        val sectors: Array<Array<Array<Sector?>>> = Array(width) { Array(height) { Array(depth) { null } } }
+        val sectors = mutableSetOf<Sector>()
         var startSector: Sector.Start? = null
         var endSector: Sector.End? = null
 
@@ -42,7 +42,7 @@ fun parseInput(): List<Race>
                 else -> Sector.Speed(pos, valueStr.toInt())
             }
 
-            sectors[x][y][z] = sector
+            sectors.add(sector)
         }
 
         races.add(
@@ -59,4 +59,29 @@ fun parseInput(): List<Race>
     }
 
     return races
+}
+
+fun printSpace(space: Array<Array<Array<Sector?>>>)
+{
+    for (z in space[0][0].indices)
+    {
+        println("z = $z")
+        for (y in space[0].indices.reversed())
+        {
+            for (x in space.indices)
+            {
+                val str = when (val sector = space[x][y][z])
+                {
+                    is Sector.Start -> "S"
+                    is Sector.End -> "E"
+                    is Sector.NoGo -> "X"
+                    is Sector.Speed -> sector.stepTimeModifier.toString()
+                    else -> "."
+                }
+                print(str.padEnd(2))
+            }
+            println()
+        }
+        println()
+    }
 }

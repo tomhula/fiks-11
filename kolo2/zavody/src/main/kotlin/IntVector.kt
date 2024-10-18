@@ -44,3 +44,5 @@ data class IntVector(val x: Int, val y: Int, val z: Int)
         return x == other.x && y == other.y && z == other.z
     }
 }
+
+operator fun <T> Array<Array<Array<T>>>.contains(pos: IntVector) = pos.x in indices && pos.y in this[0].indices && pos.z in this[0][0].indices

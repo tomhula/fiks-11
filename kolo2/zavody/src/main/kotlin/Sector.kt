@@ -5,6 +5,14 @@ sealed class Sector(val pos: IntVector)
     class End(pos: IntVector) : Sector(pos)
     class NoGo(pos: IntVector) : Sector(pos)
 
+    fun copy(pos: IntVector) = when (this)
+    {
+        is Speed -> Speed(pos, stepTimeModifier)
+        is Start -> Start(pos)
+        is End -> End(pos)
+        is NoGo -> NoGo(pos)
+    }
+
     override fun hashCode() = pos.hashCode()
 
     override fun equals(other: Any?): Boolean

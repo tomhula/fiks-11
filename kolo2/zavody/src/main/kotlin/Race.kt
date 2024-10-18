@@ -3,7 +3,7 @@ class Race(
     val initialStepTime: Int,
     val maxStepTime: Int,
     val size: IntVector,
-    val sectors: Array<Array<Array<Sector?>>>,
+    val sectors: Set<Sector>,
     val startSector: Sector.Start,
     val endSector: Sector.End
 )
