@@ -60,28 +60,3 @@ fun parseInput(): List<Race>
 
     return races
 }
-
-fun printSpace(space: Array<Array<Array<Sector?>>>)
-{
-    for (z in space[0][0].indices)
-    {
-        println("z = $z")
-        for (y in space[0].indices.reversed())
-        {
-            for (x in space.indices)
-            {
-                val str = when (val sector = space[x][y][z])
-                {
-                    is Sector.Start -> "S"
-                    is Sector.End -> "E"
-                    is Sector.NoGo -> "X"
-                    is Sector.Speed -> sector.stepTimeModifier.toString()
-                    else -> "."
-                }
-                print(str.padEnd(2))
-            }
-            println()
-        }
-        println()
-    }
-}
