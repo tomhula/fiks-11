@@ -87,9 +87,9 @@ class Solver(val race: Race)
 
     private fun buildGraph()
     {
-        val (newSize, newSpaceOrigin) = determineSpace()
+        val (newSpaceSize, newSpaceOrigin) = determineSpace()
 
-        val newSpace = Array(newSize.x) { Array(newSize.y) { Array(newSize.z) { null as Sector? } } }
+        val newSpace = Array(newSpaceSize.x) { Array(newSpaceSize.y) { Array(newSpaceSize.z) { null as Sector? } } }
 
         for (sector in race.sectors)
         {
@@ -110,9 +110,9 @@ class Solver(val race: Race)
             }
         }
 
-        for (x in 0..<newSize.x)
-            for (y in 0..<newSize.y)
-                for (z in 0..<newSize.z)
+        for (x in 0..<newSpaceSize.x)
+            for (y in 0..<newSpaceSize.y)
+                for (z in 0..<newSpaceSize.z)
                 {
                     val sector = newSpace[x][y][z]
                     val pos = IntVector(x, y, z)
