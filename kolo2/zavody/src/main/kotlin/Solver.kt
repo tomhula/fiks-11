@@ -3,19 +3,21 @@ import java.util.*
 class Solver(val race: Race)
 {
     private val graph: MutableMap<Node, List<Node>> = mutableMapOf()
+    private val sectorNodes = mutableSetOf<Node>()
+    private val simplifiedGraph: MutableMap<Node, List<Edge>> = mutableMapOf()
     private lateinit var startNode: Node
     private lateinit var endNode: Node
 
     fun solve(): Int
     {
         buildGraph()
+        buildSimplifiedGraph()
         return findBestPossibleTime()
     }
 
     private fun findShortestTimeDumb(startNode: Node, endNode: Node): Int
     {
         val dist = mutableMapOf<Node, NodeMeta>().withDefault { NodeMeta(Int.MAX_VALUE, race.initialStepTime) }
-        val prev = mutableMapOf<Node, Node?>()
         val priorityQueue = PriorityQueue<Node>(compareBy { dist.getValue(it).time })
 
         dist[startNode] = NodeMeta(0, race.initialStepTime)
@@ -25,18 +27,19 @@ class Solver(val race: Race)
         {
             val currentNode = priorityQueue.poll()
             val currentMeta = dist.getValue(currentNode)
-            for (neighbor in graph[currentNode] ?: emptyList())
+            for ((neighbor, distance) in simplifiedGraph[currentNode] ?: emptyList())
             {
-                val time = currentMeta.time + currentMeta.stepTime
+                val time = currentMeta.time + currentMeta.stepTime * distance
+
                 if (time < dist.getValue(neighbor).time)
                 {
-                    val newStepTime = currentMeta.stepTime + (neighbor.speedSector?.stepTimeModifier ?: 0)
+                    val newStepTime = currentMeta.stepTime + ((neighbor.sector as? Sector.Speed)?.stepTimeModifier ?: 0)
                     val newStepTimeFinal = if (newStepTime > race.maxStepTime || newStepTime < race.minStepTime)
                         currentMeta.stepTime
                     else
                         newStepTime
+
                     dist[neighbor] = NodeMeta(time, newStepTimeFinal)
-                    prev[neighbor] = currentNode
                     priorityQueue.add(neighbor)
                 }
             }
@@ -49,29 +52,27 @@ class Solver(val race: Race)
     {
         val dist = mutableMapOf<Node, NodeMeta>()
         dist[startNode] = NodeMeta(0, race.initialStepTime)
+
         val terminatorTime = findShortestTimeDumb(startNode, endNode)
 
-        fun explore(node: Node, time: Int, stepTime: Int)
+        fun explore(sectorNode: Node, time: Int, stepTime: Int)
         {
-            val neighbours = graph[node] ?: return
+            val neighbourConnections = simplifiedGraph[sectorNode] ?: return
 
-            if (node == endNode)
-                return
-
-            val newPossibleStepTime = stepTime + (node.speedSector?.stepTimeModifier ?: 0)
+            val newPossibleStepTime = stepTime + ((sectorNode.sector as? Sector.Speed)?.stepTimeModifier ?: 0)
             val newStepTime = if (newPossibleStepTime in race.stepTimeRange)
                 newPossibleStepTime
             else
                 stepTime
 
-            for (neighbour in neighbours)
+            for ((neighbour, distance) in neighbourConnections)
             {
                 val neighbourMeta = dist[neighbour] ?: NodeMeta(Int.MAX_VALUE, Int.MAX_VALUE)
-                val neighbourTime = time + newStepTime
+                val neighbourTime = time + newStepTime * distance
                 val newPathMeta = NodeMeta(neighbourTime, newStepTime)
 
                 if (neighbourTime > terminatorTime)
-                    return
+                    continue
 
                 if (!neighbourMeta.isSurelyBetter(newPathMeta))
                 {
@@ -104,9 +105,9 @@ class Solver(val race: Race)
 
             return when (val sector = newSpace[x][y][z])
             {
-                is Sector.Speed -> Node(this, sector)
                 is Sector.NoGo -> null
-                else -> Node(this)
+                null -> Node(this)
+                else -> Node(this, sector)
             }
         }
 
@@ -118,6 +119,9 @@ class Solver(val race: Race)
                     val pos = IntVector(x, y, z)
 
                     val node = pos.toNode() ?: continue
+
+                    if (node.sector != null)
+                        sectorNodes.add(node)
 
                     if (sector is Sector.Start)
                         startNode = node
@@ -133,6 +137,61 @@ class Solver(val race: Race)
                         graph[node] = adjacentNodes
                     }
                 }
+    }
+
+    /**
+     * Finds the shortest distance, that does not go through any sectors from the [startSectorNode] to every other sector.
+     * Also includes a distance to [startSectorNode] itself (which is 2 if it exists).
+     */
+    private fun findShortestNonSectorDistanceToAllSectors(startSectorNode: Node): Map<Node, Int>
+    {
+        check(startSectorNode.sector != null) { "The start node must be a sector node" }
+
+        val dist = mutableMapOf<Node, Int>().withDefault { Int.MAX_VALUE }
+        val resultDist = mutableMapOf<Node, Int>().withDefault { Int.MAX_VALUE }
+        val priorityQueue = PriorityQueue<Node>(compareBy { dist.getValue(it) })
+
+        dist[startSectorNode] = 0
+
+        val startNodeNeighbours = graph[startSectorNode] ?: emptyList()
+        if (startNodeNeighbours.any { it.sector == null })
+            resultDist[startSectorNode] = 2
+
+        priorityQueue.add(startSectorNode)
+
+        while (priorityQueue.isNotEmpty())
+        {
+            val currentNode = priorityQueue.poll()
+            val currentNodeDist = dist.getValue(currentNode)
+
+            val neighbours = graph[currentNode] ?: emptyList()
+            for (neighbor in neighbours)
+            {
+                val newDist = currentNodeDist + 1
+                val oldDist = dist.getValue(neighbor)
+                if (newDist < oldDist)
+                {
+                    dist[neighbor] = newDist
+
+                    if (neighbor.sector != null)
+                        resultDist[neighbor] = newDist
+                    else
+                        priorityQueue.add(neighbor)
+                }
+            }
+        }
+
+        return resultDist
+    }
+
+    private fun buildSimplifiedGraph()
+    {
+        for (sectorNode in sectorNodes)
+        {
+            val nonSectorDistances = findShortestNonSectorDistanceToAllSectors(sectorNode)
+            val edges = nonSectorDistances.map { (node, distance) -> Edge(node, distance) }
+            simplifiedGraph[sectorNode] = edges
+        }
     }
 
     private fun determineSpace(): Pair<IntVector, IntVector>
@@ -172,6 +231,8 @@ class Solver(val race: Race)
     }
 }
 
+private data class Edge(val node: Node, val distance: Int)
+
 private data class NodeMeta(val time: Int, val stepTime: Int)
 {
     fun isSurelyBetter(other: NodeMeta) =
@@ -180,17 +241,14 @@ private data class NodeMeta(val time: Int, val stepTime: Int)
                 || this.stepTime == other.stepTime && this.time < other.time
 }
 
-private data class Node(val pos: IntVector, val speedSector: Sector.Speed? = null)
+private data class Node(val pos: IntVector, val sector: Sector? = null)
 {
     override fun equals(other: Any?): Boolean
     {
         if (this === other) return true
         if (other !is Node) return false
 
-        if (pos != other.pos) return false
-        if (speedSector != other.speedSector) return false
-
-        return true
+        return pos == other.pos && sector == other.sector
     }
 
     override fun hashCode() = pos.hashCode()

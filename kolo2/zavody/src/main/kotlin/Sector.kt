@@ -13,6 +13,14 @@ sealed class Sector(val pos: IntVector)
         is NoGo -> NoGo(pos)
     }
 
+    override fun toString(): String = when (this)
+    {
+        is Speed -> "$stepTimeModifier"
+        is Start -> "B"
+        is End -> "E"
+        is NoGo -> "F"
+    }
+
     override fun hashCode() = pos.hashCode()
 
     override fun equals(other: Any?): Boolean

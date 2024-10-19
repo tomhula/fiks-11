@@ -4,15 +4,10 @@ fun main()
 {
     val races = parseInput()
 
-     for ((i, race) in races.withIndex())
-     {
-        /* Only try to solve the first 30 problems, since the following 10 are harder and won't be done on time */
-        //val result = if (i <= 29)
-         val solve = Solver(race).solve()
-         //else
-        //    -1
-
-        println("$i: $solve")
+    for (race in races)
+    {
+        val result = Solver(race).solve()
+        println(result)
     }
 }
 
