@@ -1,11 +1,11 @@
-sealed class Sector(val pos: IntVector)
+sealed class Sector(val pos: IntVec)
 {
-    class Speed(pos: IntVector, val stepTimeModifier: Int) : Sector(pos)
-    class Start(pos: IntVector) : Sector(pos)
-    class End(pos: IntVector) : Sector(pos)
-    class NoGo(pos: IntVector) : Sector(pos)
+    class Speed(pos: IntVec, val stepTimeModifier: Int) : Sector(pos)
+    class Start(pos: IntVec) : Sector(pos)
+    class End(pos: IntVec) : Sector(pos)
+    class NoGo(pos: IntVec) : Sector(pos)
 
-    fun copy(pos: IntVector) = when (this)
+    fun copy(pos: IntVec) = when (this)
     {
         is Speed -> Speed(pos, stepTimeModifier)
         is Start -> Start(pos)

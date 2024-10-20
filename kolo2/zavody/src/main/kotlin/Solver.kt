@@ -54,6 +54,7 @@ class Solver(val race: Race)
         dist[startNode] = NodeMeta(0, race.initialStepTime)
 
         val terminatorTime = findShortestTimeDumb(startNode, endNode)
+        var finalTime = Int.MAX_VALUE
 
         fun explore(sectorNode: Node, time: Int, stepTime: Int)
         {
@@ -71,6 +72,9 @@ class Solver(val race: Race)
                 val neighbourTime = time + newStepTime * distance
                 val newPathMeta = NodeMeta(neighbourTime, newStepTime)
 
+                if (neighbour == endNode)
+                    finalTime = minOf(finalTime, neighbourTime)
+
                 if (neighbourTime > terminatorTime)
                     continue
 
@@ -83,7 +87,7 @@ class Solver(val race: Race)
         }
 
         explore(startNode, 0, race.initialStepTime)
-        return dist[endNode]?.time ?: -1
+        return finalTime
     }
 
     private fun buildGraph()
@@ -98,7 +102,7 @@ class Solver(val race: Race)
             newSpace[newSpacePos.x][newSpacePos.y][newSpacePos.z] = sector.copy(newSpacePos)
         }
 
-        fun IntVector.toNode(): Node?
+        fun IntVec.toNode(): Node?
         {
             if (this !in newSpace)
                 return null
@@ -116,7 +120,7 @@ class Solver(val race: Race)
                 for (z in 0..<newSpaceSize.z)
                 {
                     val sector = newSpace[x][y][z]
-                    val pos = IntVector(x, y, z)
+                    val pos = IntVec(x, y, z)
 
                     val node = pos.toNode() ?: continue
 
@@ -194,7 +198,7 @@ class Solver(val race: Race)
         }
     }
 
-    private fun determineSpace(): Pair<IntVector, IntVector>
+    private fun determineSpace(): Pair<IntVec, IntVec>
     {
         var minX = race.size.x
         var maxX = -1
@@ -224,9 +228,9 @@ class Solver(val race: Race)
         minZ = maxOf(minZ, 0)
         maxZ = minOf(maxZ, race.size.z - 1)
 
-        val newSize = IntVector(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1)
+        val newSize = IntVec(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1)
         /* The new space's origin place in the old space */
-        val newSpaceOrigin = IntVector(minX, minY, minZ)
+        val newSpaceOrigin = IntVec(minX, minY, minZ)
         return Pair(newSize, newSpaceOrigin)
     }
 }
@@ -241,7 +245,7 @@ private data class NodeMeta(val time: Int, val stepTime: Int)
                 || this.stepTime == other.stepTime && this.time < other.time
 }
 
-private data class Node(val pos: IntVector, val sector: Sector? = null)
+private data class Node(val pos: IntVec, val sector: Sector? = null)
 {
     override fun equals(other: Any?): Boolean
     {

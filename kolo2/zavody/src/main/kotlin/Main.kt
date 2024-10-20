@@ -27,7 +27,7 @@ fun parseInput(): List<Race>
         repeat(nodeCount) {
             val line = readln().split(" ")
             val (x, y, z) = line.subList(0, 3).map(String::toInt)
-            val pos = IntVector(x, y, z)
+            val pos = IntVec(x, y, z)
 
             val sector = when (val valueStr = line[3])
             {
@@ -45,7 +45,7 @@ fun parseInput(): List<Race>
                 minStepTime,
                 initialStepTime,
                 maxStepTime,
-                IntVector(width, height, depth),
+                IntVec(width, height, depth),
                 sectors,
                 startSector!!,
                 endSector!!
