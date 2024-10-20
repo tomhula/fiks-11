@@ -10,7 +10,7 @@
 % Packages
 \usepackage{amsmath}
 \usepackage{tikz}
-\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
 \usepackage[figurename=Obr.]{caption}
 \usepackage{amsfonts}
 \usepackage[normalem]{ulem}
@@ -24,13 +24,15 @@
 \begin{document}
     \maketitle
 
-    Jelikož se satelit odráží od krajů obdelníku pod stejným úhlem, pod kterým dopadl, má stejné vlastnosti jako paprsky světla odrážející se v zrcadle.
-    Základní pravidlo se kterým budeme pracovat je, že zrcadlo znázorňuje objekt, jakoby byl ve stejné vzdálenosti za zrcadlem, jako je objekt od zrcadla.
-    Chceme-li paprskem zasáhnout nějaký cíl odrazem o zrcadlo, můžeme paprsek namířit na odraz cíle.
-    Paprsek se odrazí od zrcadla ve směru cíle.
-    Nutno podotknout, že délka paprsku je stejná jako vzdálenost zdroje od zrcadleného cíle, jelikož paprsek pomyslně cestuje stále rovně do zrcadlené "dimenze".
+    Princip odrazu satelitu od stěn obdélníku je identický s odrazy světla v zrcadle.
+    Základní pravidlo se kterým budeme pracovat je, že zrcadlo zobrazuje objekt, jako by se nacházel ve stejné vzdálenosti za zrcadlem, jako je skutečný objekt od zrcadla.
+    Pro zasažení cíle odrazem o zrcadlo stačí namířit paprsek na obraz cíle v zrcadle.
+    Paprsek se od zrcadla odrazí ve směru cíle.
+    Délka paprsku je stejná jako vzdálenost zdroje od obrazu cíle, protože paprsek pomyslně cestuje stále rovně do zrcadlené "dimenze". (viz obrázek \ref{fig:mirroring1})
+    Tuto analogii lze rozšířit i na případ s více zrcadly.
+    Na obrázku \ref{fig:mirroring2} je znázorněn stejný princip, ale se dvěma zrcadly.
 
-    \begin{figure}[h]
+    \begin{figure}
         \centering
         \begin{tikzpicture}
             % coordinates
@@ -38,8 +40,6 @@
             \coordinate (target) at (7, 1);
             \coordinate (target-mirrored) at (7, 5);
             \coordinate (mirror-contact) at (5, 3);
-            % mirror
-            \draw[thick] (0, 3) -- (10, 3);
             % source
             \fill (source) circle (2pt);
             \node[below] at (source) {Zdroj};
@@ -50,22 +50,22 @@
             % target-mirrored
             \draw[lightgray, thick] (target-mirrored) ++(-0.1,0) -- ++(0.2,0); % Horizontal target
             \draw[lightgray, thick] (target-mirrored) ++(0,-0.1) -- ++(0,0.2); % Vertical target
-            \node[above] at (target-mirrored) {Odraz cíle};
-            % line source -> target-mirroreded
+            \node[above] at (target-mirrored) {Obraz cíle};
+            % line source -> mirror-contact
             \draw[thick] (source) -- (mirror-contact);
-            % line source -> target-mirroreded
-            \draw[lightgray, thick] (mirror-contact) -- (target-mirrored);
+            % line mirror-contact -> target-mirroreded
+            \draw[dashed, lightgray, thick] (mirror-contact) -- (target-mirrored);
             % line intersection -> target
             \draw[thick] (mirror-contact) -- (target);
+
+            % mirror
+            \draw[thick, cyan] (0, 3) -- (10, 3);
+            \node[below] at (0, 3) {Zrcadlo};
         \end{tikzpicture}
         \caption{Zrcadlení paprsku}
         \label{fig:mirroring1}
     \end{figure}
-
-    S tímto se dá pracovat i dále, kdy můžeme zrcadlit i zrcadlo.
-    Na obrázku \ref{fig:mirroring2} můžeme vidět stejný případ, ale se dvěma zrcadly.
-
-    \begin{figure}[h]
+    \begin{figure}
         \centering
         \begin{tikzpicture}
             % coordinates
@@ -76,14 +76,14 @@
             \coordinate (mirror-contact) at (4.4, 3);
             \coordinate (mirror2-contact) at (6.3, 0);
             % first mirror
-            \draw[thick] (0, 3) -- (10, 3);
+            \draw[thick, cyan] (0, 3) -- (10, 3);
             \node[below] at (0, 3) {Zrcadlo};
             % second mirror
-            \draw[thick] (0, 0) -- (10, 0);
+            \draw[thick, cyan] (0, 0) -- (10, 0);
             \node[below] at (0, 0) {Zrcadlo 2};
             % second mirror reflection
-            \draw[lightgray, thick] (0, 6) -- (10, 6);
-            \node[below] at (0, 6) {Odraz zrcadla 2};
+            \draw[cyan!20, thick] (0, 6) -- (10, 6);
+            \node[below] at (0, 6) {Obraz zrcadla 2};
             % source
             \fill (source) circle (2pt);
             \node[below] at (source) {Zdroj};
@@ -94,27 +94,31 @@
             % target-mirrored
             \draw[lightgray, thick] (target-mirrored) ++(-0.1,0) -- ++(0.2,0); % horizontal cross line
             \draw[lightgray, thick] (target-mirrored) ++(0,-0.1) -- ++(0,0.2); % vertical cross line
-            \node[above] at (target-mirrored) {Odraz cíle};
+            \node[above] at (target-mirrored) {Obraz cíle};
             % target-mirrored2
             \draw[lightgray, thick] (target-mirrored2) ++(-0.1,0) -- ++(0.2,0); % horizontal cross line
             \draw[lightgray, thick] (target-mirrored2) ++(0,-0.1) -- ++(0,0.2); % vertical cross line
-            \node[above] at (target-mirrored2) {Odraz odrazu cíle};
+            \node[above] at (target-mirrored2) {Obraz obrazu cíle};
             % line source -> intersect1
             \draw[thick] (source) -- (mirror-contact);
             % line mirror-contact -> target-mirrored2
-            \draw[lightgray, thick] (mirror-contact) -- (target-mirrored2);
+            \draw[lightgray, dashed, thick] (mirror-contact) -- (target-mirrored2);
             % line mirror-contact -> mirror2-contact
             \draw[thick] (mirror-contact) -- (mirror2-contact);
             % line mirror2-contact -> target
             \draw[thick] (mirror2-contact) -- (target);
         \end{tikzpicture}
-        \caption{Zrcadlení paprsku s více zrcadly}
+        \caption{Zrcadlení paprsku se dvěma zrcadly}
         \label{fig:mirroring2}
     \end{figure}
 
     V našem případě je zdroj satelit, paprsek jeho trajektorie, zrcadla jsou strany obdelníku a cíle jsou jeho 4 rohy.
+    (viz obrázek \ref{fig:satellite})
+    Pokud si představíme nekonečně mnoho odrazů stran obdélníku a tím pádem i jejich rohů, dostaneme mřížku zrcadlových obrazů rohů.
+    (viz obrázek \ref{fig:satellite-mirrors})
+    Takto vidíme všechny zrcadlové zobrazení rohů obdelníku.
 
-    \begin{figure}[h]
+    \begin{figure}
         \center
         \begin{tikzpicture}
             % coordinates
@@ -132,11 +136,7 @@
         \caption{Satelit v obdelníku}
         \label{fig:satellite}
     \end{figure}
-
-    Když nyní zakreslíme \emph{nekonečně} mnoho odrazů stran obdelníku a tím pádem i jejich rohů, dostaneme obrázek \ref{fig:satellite-mirrors}.
-    (odrazy satelitu nezakreslujeme, jelikož to nemá význam pro řešení problému; každý roh je znázorněn křížkem)
-
-    \begin{figure}[h]
+    \begin{figure}
         \centering
         \begin{tikzpicture}
             % coordinates
@@ -162,11 +162,9 @@
             }
         \end{tikzpicture}
         \caption{Satelit v obdelníku zrcadlený}
+        \caption*{Obrazy satelitu nezakreslujeme, jelikož to nemá význam pro řešení problému. Každý roh je znázorněn křížkem.}
         \label{fig:satellite-mirrors}
     \end{figure}
-
-    Takto vidíme všechny zrcadlové zobrazení rohů obdelníku.
-
 
     \section{Otázka 1}
     \label{sec:otazka-1}
@@ -175,8 +173,7 @@
 
     \textbf{Všechny zobrazení rohu, jež jsou ve vzdálenosti $\leq D$ od satelitu, jsou satelitem po několika odrazech dosažitelné.}
     Toto je znázorněno na obrázku \ref{fig:satellite-radius}.
-
-    \begin{figure}[h]
+    \begin{figure}
         \centering
         \begin{tikzpicture}
             % coordinates
@@ -230,8 +227,7 @@
         \caption{Rohy v dosahu satelitu}
         \label{fig:satellite-radius}
     \end{figure}
-
-    Pokud bychom toto měli vyjádřit matematicky, tak můžeme definovat dvě množiny, které vyjadřují horizontální a vertikální body rohů.
+    Pokud bychom toto měli vyjádřit matematicky, tak můžeme definovat dvě množiny, které vyjadřují horizontální a vertikální osu mřížky rohů.
     Množiny jsou omezeny pouze na ta čísla, která jsou do vzdálenosti $D$ od satelitu.
     Ale pozor, pouze do vzdálenosti v dané ose.
     (nikoli skutečné rovinové vzdálenosti)
@@ -248,14 +244,15 @@
     Takže chceme-li dostat všechny rohy, do kterých satelit může doletět, vyjádříme je takto množino $R$.
 
     \[
-        R = \left| \{ [h, v] \in H \times V \mid \sqrt{(mh - x)^2+(nv - y)^2} \leq D \} \right|
+        R = \{ [h, v] \in H \times V \mid \sqrt{(mh - x)^2+(nv - y)^2} \leq D \}
     \]
 
     Toto je náš výsledek.
-    \textbf{Satelit se může rozletět $|R|$ směry, tak, že po nějaké vzdálenosti $d \leq D$ skončí v rohu.}
+    \textbf{Satelit se může letět $|R|$ způsoby (směr a vzdálenost) tak, že po nějaké vzdálenosti $d \leq D$ skončí v rohu.}
 
 
     \section{Otázka 2}
+    \label{sec:otazka-2}
 
     Druhá otázka je velmi podobná té první, akorát místo maximální vzdálenosti $D$ máme zadán maximální počet odrazů $N$.
     Definujme si pomocnou funkci $f(x)$, která od kladných čísel odečítá $1$.
@@ -278,10 +275,12 @@
     Výsledna množina všech dosažitelných rohů by vypadala takto:
 
     \[
-        R = \left| \{ [h, v] \in H \times V \mid |f(v)| + |f(h)| \leq N \} \right|
+        R =  \{ [h, v] \in H \times V \mid |f(v)| + |f(h)| \leq N \}
     \]
 
+    $f(v)$ a $f(h)$ se používaji, ze stejného důvodu jako $N+1$ v množinách $H$ a $V$.
+    První rohy jsou nezrcadlené a tak se dají dosáhnout bez odrazu.
     Toto je náš výsledek.
-    \textbf{Satelit se může rozletět $|R|$ směry, tak, že po $n \leq N$ odrazech skončí v rohu.}
+    \textbf{Satelit se může rozletět $|R|$ způsoby tak, že po $n \leq N$ odrazech skončí v rohu.}
 
 \end{document}
