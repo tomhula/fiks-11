@@ -92,7 +92,7 @@ class Solver(val race: Race)
 
     private fun buildGraph()
     {
-        val (newSpaceSize, newSpaceOrigin) = determineSpace()
+        val (newSpaceSize, newSpaceOrigin) = determineSpace(race.size, race.sectors)
 
         val newSpace = Array(newSpaceSize.x) { Array(newSpaceSize.y) { Array(newSpaceSize.z) { null as Sector? } } }
 
@@ -198,20 +198,24 @@ class Solver(val race: Race)
         }
     }
 
-    private fun determineSpace(): Pair<IntVec, IntVec>
+    /**
+     * Trims the provided space of empty void (no sectors), while leaving padding of 1 around [Sector.NoGo] sectors.
+     * @return Size of the trimmed space and the position of the origin of the new space in the old space.
+     */
+    private fun determineSpace(originalSize: IntVec, sectors: Iterable<Sector>): Pair<IntVec, IntVec>
     {
-        var minX = race.size.x
+        var minX = originalSize.x
         var maxX = -1
-        var minY = race.size.y
+        var minY = originalSize.y
         var maxY = -1
-        var minZ = race.size.z
+        var minZ = originalSize.z
         var maxZ = -1
 
-        for (sector in race.sectors)
+        for (sector in sectors)
         {
             val pos = sector.pos
-            /* Only NoGo sectors have padding, if we did not,
-            we couldn't go around it. (which would originally be possible */
+            /* Only NoGo sectors have padding, if they did not,
+             * we couldn't go around it. (which would originally be possible) */
             val padding = if (sector is Sector.NoGo) 1 else 0
             minX = minOf(minX, pos.x - padding)
             maxX = maxOf(maxX, pos.x + padding)
@@ -221,39 +225,46 @@ class Solver(val race: Race)
             maxZ = maxOf(maxZ, pos.z + padding)
         }
 
+        /* Make sure no padding was added over the original size. */
         minX = maxOf(minX, 0)
-        maxX = minOf(maxX, race.size.x - 1)
+        maxX = minOf(maxX, originalSize.x - 1)
         minY = maxOf(minY, 0)
-        maxY = minOf(maxY, race.size.y - 1)
+        maxY = minOf(maxY, originalSize.y - 1)
         minZ = maxOf(minZ, 0)
-        maxZ = minOf(maxZ, race.size.z - 1)
+        maxZ = minOf(maxZ, originalSize.z - 1)
 
         val newSize = IntVec(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1)
         /* The new space's origin place in the old space */
         val newSpaceOrigin = IntVec(minX, minY, minZ)
         return Pair(newSize, newSpaceOrigin)
     }
-}
 
-private data class Edge(val node: Node, val distance: Int)
+    /**
+     *  A graph edge.
+     *  @param node The node this edge leads to.
+     *  @param distance The distance to the [node].
+     */
+    private data class Edge(val node: Node, val distance: Int)
 
-private data class NodeMeta(val time: Int, val stepTime: Int)
-{
-    fun isSurelyBetter(other: NodeMeta) =
-        this.time < other.time && this.stepTime < other.stepTime
-                || this.time == other.time && this.stepTime < other.stepTime
-                || this.stepTime == other.stepTime && this.time < other.time
-}
-
-private data class Node(val pos: IntVec, val sector: Sector? = null)
-{
-    override fun equals(other: Any?): Boolean
+    /** A [time] and [stepTime] a rocket was able to reach a node with. */
+    private data class NodeMeta(val time: Int, val stepTime: Int)
     {
-        if (this === other) return true
-        if (other !is Node) return false
-
-        return pos == other.pos && sector == other.sector
+        fun isSurelyBetter(other: NodeMeta) =
+            this.time < other.time && this.stepTime < other.stepTime
+                    || this.time == other.time && this.stepTime < other.stepTime
+                    || this.stepTime == other.stepTime && this.time < other.time
     }
 
-    override fun hashCode() = pos.hashCode()
+    private data class Node(val pos: IntVec, val sector: Sector? = null)
+    {
+        override fun equals(other: Any?): Boolean
+        {
+            if (this === other) return true
+            if (other !is Node) return false
+
+            return pos == other.pos && sector == other.sector
+        }
+
+        override fun hashCode() = pos.hashCode()
+    }
 }
