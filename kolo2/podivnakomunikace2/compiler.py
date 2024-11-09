@@ -114,7 +114,9 @@ def expand_macros(source_text: str, macros: list[Macro]) -> str:
                 indent = match.group(1)
                 args = match.group(2).split(" ")
                 macro_lines = macro.expand(*args)
+                result_lines.append("#@ " + match.group(0))
                 result_lines += map(lambda l: indent + l, macro_lines)
+                result_lines.append("#@@")
                 break
         else:
             result_lines.append(line)
