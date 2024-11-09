@@ -1,4 +1,3 @@
-# ADD_TO <stack_size> <target_index (from bottom)> <amount>
 import os
 import re
 import sys
@@ -65,6 +64,22 @@ class IncludeMacro(Macro):
         with open(file_path) as file:
             return file.read().split(os.linesep)
 
+class PopMacro(Macro):
+    def get_name(self) -> str:
+        return "POP"
+
+    def get_syntax(self) -> str:
+        return "POP"
+
+    def get_description(self) -> str:
+        return "Pops the top element from the stack"
+
+    def expand(self, *args) -> list[str]:
+        builder = FslBuilder()
+        builder.push(1)
+        builder.delete()
+        return builder.build()
+
 class FslBuilder:
     def __init__(self):
         self.lines = []
@@ -103,20 +118,27 @@ class FslBuilder:
     def vecsub(self) -> Self:
         return self.append_instruction("VECSUB")
 
+    def delete(self) -> Self:
+        return self.append_instruction("DELETE")
+
 
 def expand_macros(source_text: str, macros: list[Macro]) -> str:
     lines = source_text.split(os.linesep)
     result_lines = []
     for line in lines:
         for macro in macros:
-            match = re.match(r"(\s*)" + macro.get_name() + r"\s+(.*)", line)
+            match = re.match(r"(\s*)(" + macro.get_name() + r"(?:\s+(.*))?)", line)
             if match:
                 indent = match.group(1)
-                args = match.group(2).split(" ")
+                args_str = match.group(3)
+                if args_str:
+                    args = args_str.split()
+                else:
+                    args = []
                 macro_lines = macro.expand(*args)
-                result_lines.append("#@ " + match.group(0))
+                result_lines.append(indent + "#@ " + match.group(2))
                 result_lines += map(lambda l: indent + l, macro_lines)
-                result_lines.append("#@@")
+                result_lines.append(indent + "#@@")
                 break
         else:
             result_lines.append(line)
@@ -128,7 +150,7 @@ if __name__ == '__main__':
     with open(source_path) as file:
         source_text = file.read()
 
-    macros = [AddToMacro(), IncludeMacro()]
+    macros = [AddToMacro(), IncludeMacro(), PopMacro()]
     expanded_text = expand_macros(source_text, macros)
     print(expanded_text, end="")
 
