@@ -80,6 +80,33 @@ class PopMacro(Macro):
         builder.delete()
         return builder.build()
 
+class SetMacro(Macro):
+    def get_name(self) -> str:
+        return "SET"
+
+    def get_syntax(self) -> str:
+        return "SET <stack_size> <target_index (from bottom)> <value>"
+
+    def get_description(self) -> str:
+        return "Sets the stack element at <target_index> from the bottom of the stack of size <stack_size> to <value>"
+
+    def expand(self, *args) -> list[str]:
+        stack_size = int(args[0])
+        target_index = int(args[1])
+        value = int(args[2])
+        builder = FslBuilder()
+        # Get target on top
+        target_to_top_rotate_num = stack_size - target_index
+        builder.rotate(target_to_top_rotate_num)
+
+        builder.push(1)
+        builder.delete()
+        builder.push(value)
+
+        # Get target back to its original position
+        builder.rotate(target_to_top_rotate_num)
+        return builder.build()
+
 class FslBuilder:
     def __init__(self):
         self.lines = []
@@ -150,8 +177,6 @@ if __name__ == '__main__':
     with open(source_path) as file:
         source_text = file.read()
 
-    macros = [AddToMacro(), IncludeMacro(), PopMacro()]
+    macros = [AddToMacro(), IncludeMacro(), PopMacro(), SetMacro()]
     expanded_text = expand_macros(source_text, macros)
     print(expanded_text, end="")
-
-
