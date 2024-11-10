@@ -26,8 +26,8 @@ while True:
     if char2 == '\0':
         str2_terminated = 1
 
-    if str1_terminated:
-        if str2_terminated:
+    if str1_terminated == 1:
+        if str2_terminated == 1:
             break
 
     if char1 != char2:
