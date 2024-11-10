@@ -8,14 +8,19 @@ ch1_pointer = 0
 ch2_pointer = 0
 
 def increment_pointers():
-    global ch1_pointer, ch2_pointer
-    ch1_pointer += 1
-    ch2_pointer += 1
+    global ch1_pointer, ch2_pointer, str1_terminated
+    if str1_terminated != 1:
+        ch1_pointer += 1
+    if str2_terminated != 1:
+        ch2_pointer += 1
 
 def increment_pointers_and_differences():
-    increment_pointers()
-    global differences
+    global differences, ch1_pointer, ch2_pointer
     differences += 1
+    if str1_terminated != 1:
+        ch1_pointer += 1
+    if str2_terminated != 1:
+        ch2_pointer += 1
 
 while True:
     char1 = str1[ch1_pointer] if ch1_pointer < len(str1) else 'UNDEFINED'
