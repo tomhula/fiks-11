@@ -1,0 +1,208 @@
+#INCLUDE setup.fsl
+
+PUSH 0
+PUSH 0
+PUSH 0
+
+FLIP
+SWAP
+# 0 = differences
+# 1 = str1 terminated
+# 2 = str2 terminated
+# 3 = str1 char pointer
+# 4 = str2 char pointer
+
+main_loop:
+    SWAP
+    # 3 = str2 char pointer
+    # 4 = str1 char pointer
+    DUP
+    LOAD_FROM_MEM
+    # 5 = str1 char
+    ROTATE 3
+    # 3 = str1 char
+    # 4 = str1 char pointer
+    # 5 = str2 char pointer
+    DUP
+    LOAD_FROM_MEM
+    # 3 = str1 char
+    # 4 = str1 char pointer
+    # 5 = str2 char pointer
+    # 6 = str2 char
+    ROTATE 3
+    ROTATE 4
+    SWAP
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    # 5 = str1 char
+    # 6 = str2 char
+    SWAP
+    PUSH 0
+    # 5 = str2 char
+    # 6 = str1 char
+    # 7 = 0
+    CMP
+    # 8 = str1 CMP 0
+    SKIP_IF EQ0 # ch1_eq_0
+        JMP ch1_eq_0
+            SET 9 1 1
+        ch1_eq_0:
+    POP
+    POP
+    SWAP
+    PUSH 0
+    # 5 = str1 char
+    # 6 = str2 char
+    # 7 = 0
+    CMP
+    # 8 = str2 CMP 0
+    SKIP_IF EQ0 # ch2_eq_0
+        JMP ch2_eq_0
+            SET 9 2 1
+        ch2_eq_0:
+    POP
+    POP
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    # 5 = str1 char
+    # 6 = str2 char
+    ROTATE 6
+    # 1 = str2 char
+    # 2 = str1 char
+    # 3 = str2 char pointer
+    # 4 = str1 char pointer
+    # 5 = str2 terminated
+    # 6 = str1 terminated
+    PUSH 1
+    # 7 = 1
+    CMP
+    # 8 = str1 terminated CMP 1
+    SKIP_IF EQ0 # end_str1_terminated
+        JMP end_str1_terminated
+            POP
+            POP
+            SWAP
+            # 5 = str1 terminated
+            # 6 = str2 terminated
+            PUSH 1
+            # 7 = 1
+            CMP
+            # 8 = str2 terminated CMP 1
+            SKIP_IF EQ0 # end_str2_terminated
+                JMP end_str2_terminated
+                    JMP end
+                end_str2_terminated:
+            POP
+            POP
+            PUSH 999
+            PUSH 999
+        end_str1_terminated:
+    POP
+    POP
+    SWAP
+    ROTATE 6
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    # 5 = str1 char
+    # 6 = str2 char
+    CMP
+    # 7 = str1 char CMP str2 char
+    SKIP_IF NE0 # chars_neq
+        JMP chars_neq
+            POP
+            PROC increment_pointers_and_differences_stack_size_7
+            POP
+            POP
+            JMP main_loop # continue
+        chars_neq:
+    POP
+    POP
+    POP
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    ROTATE 4
+    # 1 = str2 char pointer
+    # 2 = str1 char pointer
+    # 3 = str2 terminated
+    # 4 = str1 terminated
+    PUSH 1
+    # 5 = 1
+    CMP
+    # 6 = str1 terminated CMP 1
+    SKIP_IF EQ0 # str1_terminated
+        JMP str1_terminated
+            PROC increment_pointers_and_differences_stack_size_7
+            POP
+            POP
+            JMP main_loop
+        str1_terminated:
+    POP
+    POP
+    SWAP
+    # 1 = str2 char pointer
+    # 2 = str1 char pointer
+    # 3 = str1 terminated
+    # 4 = str2 terminated
+    PUSH 1
+    # 5 = 1
+    CMP
+    # 6 = str2 terminated CMP 1
+    SKIP_IF EQ0 # str2_terminated
+        JMP str2_terminated
+            PROC increment_pointers_and_differences_stack_size_7
+            POP
+            POP
+        str2_terminated:
+    POP
+    POP
+    SWAP
+    ROTATE 4
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    PUSH 999
+    PUSH 999
+    PROC increment_pointers_stack_size_7
+    POP
+    POP
+    JMP main_loop
+
+end:
+    PUSH 8
+    DELETE
+    EXIT
+
+
+increment_pointers_and_differences_stack_size_7:
+    # 0 = differences
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    # 5 = XXX
+    # 6 = XXX
+    # Account for ret addr
+    ADD_TO 8 0 1
+    ADD_TO 8 3 1
+    ADD_TO 8 4 1
+    RET
+
+increment_pointers_stack_size_7:
+    # 0 = differences
+    # 1 = str1 terminated
+    # 2 = str2 terminated
+    # 3 = str1 char pointer
+    # 4 = str2 char pointer
+    # 5 = XXX
+    # 6 = XXX
+    # Account for ret addr
+    ADD_TO 8 3 1
+    ADD_TO 8 4 1
+    RET
