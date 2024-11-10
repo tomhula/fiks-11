@@ -57,12 +57,12 @@ class IncludeMacro(Macro):
         return "INCLUDE <file_path>"
 
     def get_description(self) -> str:
-        return "Includes the content of the file at <file_path>"
+        return "Includes expanded content of the file at <file_path>"
 
     def expand(self, *args) -> list[str]:
         file_path = args[0]
         with open(file_path) as file:
-            return file.read().split(os.linesep)
+            return expand_macros(file.read()).split(os.linesep)
 
 class PopMacro(Macro):
     def get_name(self) -> str:
@@ -171,8 +171,9 @@ class FslBuilder:
     def save(self, arg: int) -> Self:
         return self.append_instruction("SAVE", arg)
 
+macros = [AddToMacro(), IncludeMacro(), PopMacro(), SetMacro(), SaveStringMacro()]
 
-def expand_macros(source_text: str, macros: list[Macro]) -> str:
+def expand_macros(source_text: str) -> str:
     lines = source_text.split(os.linesep)
     result_lines = []
     for line in lines:
@@ -200,6 +201,5 @@ if __name__ == '__main__':
     with open(source_path) as file:
         source_text = file.read()
 
-    macros = [AddToMacro(), IncludeMacro(), PopMacro(), SetMacro(), SaveStringMacro()]
-    expanded_text = expand_macros(source_text, macros)
+    expanded_text = expand_macros(source_text)
     print(expanded_text, end="")
