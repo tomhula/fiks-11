@@ -107,6 +107,26 @@ class SetMacro(Macro):
         builder.rotate(target_to_top_rotate_num)
         return builder.build()
 
+class SaveStringMacro(Macro):
+    def get_name(self) -> str:
+        return "SAVE_STRING"
+
+    def get_syntax(self) -> str:
+        return "SAVE_STRING <string>"
+
+    def get_description(self) -> str:
+        return "Saves the string <string> to the heap and pushes its address to the stack"
+
+    def expand(self, *args) -> list[str]:
+        string = " ".join(args)
+        builder = FslBuilder()
+        for c in string:
+            builder.save(ord(c))
+        builder.save(0)
+        builder.push(len(string))
+        builder.delete()
+        return builder.build()
+
 class FslBuilder:
     def __init__(self):
         self.lines = []
@@ -148,6 +168,9 @@ class FslBuilder:
     def delete(self) -> Self:
         return self.append_instruction("DELETE")
 
+    def save(self, arg: int) -> Self:
+        return self.append_instruction("SAVE", arg)
+
 
 def expand_macros(source_text: str, macros: list[Macro]) -> str:
     lines = source_text.split(os.linesep)
@@ -177,6 +200,6 @@ if __name__ == '__main__':
     with open(source_path) as file:
         source_text = file.read()
 
-    macros = [AddToMacro(), IncludeMacro(), PopMacro(), SetMacro()]
+    macros = [AddToMacro(), IncludeMacro(), PopMacro(), SetMacro(), SaveStringMacro()]
     expanded_text = expand_macros(source_text, macros)
     print(expanded_text, end="")
