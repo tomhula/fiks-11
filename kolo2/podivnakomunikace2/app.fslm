@@ -1,4 +1,4 @@
-#INCLUDE setup.fsl
+#INCLUDE setup.fslm
 
 PUSH 0
 PUSH 0
@@ -42,7 +42,7 @@ main_loop:
     # 6 = str1 char
     # 7 = 0
     CMP
-    # 8 = str1 CMP 0
+    # 8 = str1 char CMP 0
     SKIP_IF EQ0 # ch1_eq_0
         JMP ch1_eq_0
             SET 9 1 1
@@ -55,7 +55,7 @@ main_loop:
     # 6 = str2 char
     # 7 = 0
     CMP
-    # 8 = str2 CMP 0
+    # 8 = str2 char CMP 0
     SKIP_IF EQ0 # ch2_eq_0
         JMP ch2_eq_0
             SET 9 2 1
@@ -96,12 +96,12 @@ main_loop:
                 end_str2_terminated:
             POP
             POP
+            SWAP
             PUSH 999
             PUSH 999
         end_str1_terminated:
     POP
     POP
-    SWAP
     ROTATE 6
     # 1 = str1 terminated
     # 2 = str2 terminated
@@ -188,10 +188,42 @@ increment_pointers_and_differences_stack_size_7:
     # 4 = str2 char pointer
     # 5 = XXX
     # 6 = XXX
-    # Account for ret addr
+    # 7 = ret addr
     ADD_TO 8 0 1
-    ADD_TO 8 3 1
-    ADD_TO 8 4 1
+    ROTATE 7
+    # 0 = differences
+    # 1 = ret addr
+    # 2 = XXX
+    # 3 = XXX
+    # 4 = str2 char pointer
+    # 5 = str1 char pointer
+    # 6 = str2 terminated
+    # 7 = str1 terminated
+    PUSH 1
+    # 8 = 1
+    CMP
+    # 9 = str1 terminated CMP 1
+    SKIP_IF NE0
+        JMP ipd_str1_not_terminated
+            ADD_TO 10 5 1
+        ipd_str1_not_terminated:
+    POP
+    POP
+    SWAP
+    # 6 = str1 terminated
+    # 7 = str2 terminated
+    PUSH 1
+    # 8 = 1
+    # 9 = str2 terminated CMP 1
+    CMP
+    SKIP_IF NE0
+        JMP ipd_str2_not_terminated
+            ADD_TO 10 4 1
+        ipd_str2_not_terminated:
+    POP
+    POP
+    SWAP
+    ROTATE 7
     RET
 
 increment_pointers_stack_size_7:
@@ -202,7 +234,39 @@ increment_pointers_stack_size_7:
     # 4 = str2 char pointer
     # 5 = XXX
     # 6 = XXX
-    # Account for ret addr
-    ADD_TO 8 3 1
-    ADD_TO 8 4 1
+    # 7 = ret addr
+    ROTATE 7
+    # 0 = differences
+    # 1 = ret addr
+    # 2 = XXX
+    # 3 = XXX
+    # 4 = str2 char pointer
+    # 5 = str1 char pointer
+    # 6 = str2 terminated
+    # 7 = str1 terminated
+    PUSH 1
+    # 8 = 1
+    CMP
+    # 9 = str1 terminated CMP 1
+    SKIP_IF NE0
+        JMP ip_str1_not_terminated
+            ADD_TO 10 5 1
+        ip_str1_not_terminated:
+    POP
+    POP
+    SWAP
+    # 6 = str1 terminated
+    # 7 = str2 terminated
+    PUSH 1
+    # 8 = 1
+    # 9 = str2 terminated CMP 1
+    CMP
+    SKIP_IF NE0
+        JMP ip_str2_not_terminated
+            ADD_TO 10 4 1
+        ip_str2_not_terminated:
+    POP
+    POP
+    SWAP
+    ROTATE 7
     RET
