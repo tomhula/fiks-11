@@ -102,6 +102,7 @@ class Solver(val race: Race)
             newSpace[newSpacePos.x][newSpacePos.y][newSpacePos.z] = sector.copy(newSpacePos)
         }
 
+        /** Converts point in space to a graph [Node] */
         fun IntVec.toNode(): Node?
         {
             if (this !in newSpace)
@@ -144,7 +145,7 @@ class Solver(val race: Race)
     }
 
     /**
-     * Finds the shortest distance, that does not go through any sectors from the [startSectorNode] to every other sector.
+     * Finds the shortest distance, that does not go through any sectors from the [startSectorNode] to every other sector node.
      * Also includes a distance to [startSectorNode] itself (which is 2 if it exists).
      */
     private fun findShortestNonSectorDistanceToAllSectors(startSectorNode: Node): Map<Node, Int>

@@ -28,7 +28,7 @@ sealed class Sector(val pos: IntVec)
         if (this === other) return true
         if (other !is Sector) return false
 
-        /* Note that time of Sector.Speed is not compared, since there can't be two sectors on same place anyway */
+        /* Note that stepTimeModifier of Sector.Speed is not compared, since there can't be two sectors on same place anyway */
         return pos == other.pos
     }
 }
