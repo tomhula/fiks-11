@@ -146,7 +146,7 @@ class Solver(val race: Race)
 
     /**
      * Finds the shortest distance, that does not go through any sectors from the [startSectorNode] to every other sector node.
-     * Also includes a distance to [startSectorNode] itself (which is 2 if it exists).
+     * For [Sector.Speed] start sector node also includes a distance to [startSectorNode] itself (which is 2 if it exists).
      */
     private fun findShortestNonSectorDistanceToAllSectors(startSectorNode: Node): Map<Node, Int>
     {
@@ -158,9 +158,13 @@ class Solver(val race: Race)
 
         dist[startSectorNode] = 0
 
-        val startNodeNeighbours = graph[startSectorNode] ?: emptyList()
-        if (startNodeNeighbours.any { it.sector == null })
-            resultDist[startSectorNode] = 2
+        if (startSectorNode.sector is Sector.Speed)
+        {
+            val startNodeNeighbours = graph[startSectorNode] ?: emptyList()
+            val hasAtLeastOneEmptySectorNeighbour = startNodeNeighbours.any { it.sector == null }
+            if (hasAtLeastOneEmptySectorNeighbour)
+                resultDist[startSectorNode] = 2
+        }
 
         priorityQueue.add(startSectorNode)
 
