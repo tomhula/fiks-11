@@ -22,19 +22,19 @@ Skládá se z následujících kroků:
 Každá strana 3D prostoru se ořízne (trim) o prostor prázdných sektorů, pokud tam nějaký je. Důlžité je, že pokud nejkrajnější sektor je zakázaný, tak se nesmí oříznout až k němu, aby se nbepřišlo o řešení, při kterém se dá latět okolo něj.
 
 ### Prostor před oříznutím
-![Před oříznutím](res/pre_trim.svg)  
+![Před oříznutím](popis-res/pre_trim.svg)  
 ### Prostor po oříznutí (zvírazněny sektory, které stanovují hranici oříznutí)
-![Po oříznutí](res/post_trim.svg)
+![Po oříznutí](popis-res/post_trim.svg)
 
 ## 2. Stavba grafu
 
 Nový prostor z předchozího se vezme a postaví se graf. Zakázané sektory jsou ignorovány.
 
 ### Prostor před stavbou grafu
-![Před stavbou grafu](res/pre_graph.svg)
+![Před stavbou grafu](popis-res/pre_graph.svg)
 
 ### Výsledný graf
-![Graf](res/post_graph.svg)
+![Graf](popis-res/post_graph.svg)
 
 ## 3. Zjednodušení grafu
 
@@ -45,11 +45,11 @@ Na toto se používá upravený Dijkstrův algoritmus, který naviguje poze skrz
 
 ### Před zjednodušením grafu (pro jednoduchiost jiné zadání než doposud)
 
-![Před zjednodušením](res/pre_graph_simplified.svg)
+![Před zjednodušením](popis-res/pre_graph_simplified.svg)
 
 ### Zjednodušený graf
 
-![Zjednodušený graf](res/post_graph_simplified.svg)
+![Zjednodušený graf](popis-res/post_graph_simplified.svg)
 
 ## 4. Nalezení nejkratší cesty hloupě
 
