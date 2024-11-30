@@ -15,6 +15,10 @@ application {
     mainClass = "MainKt"
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 tasks {
     shadowJar {
         archiveFileName = project.name + ".jar"
