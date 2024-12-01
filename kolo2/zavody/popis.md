@@ -26,6 +26,16 @@ Každá strana 3D prostoru se ořízne (trim) o prostor prázdných sektorů, po
 ### Prostor po oříznutí (zvírazněny sektory, které stanovují hranici oříznutí)
 ![Po oříznutí](popis-res/post_trim.svg)
 
+### Složitost
+
+`S = počet speciálních sektorů`
+
+**Časová:** `O(S)`
+
+**Prostorová:** `O(1)`
+
+Množství využité paměti se nemění.
+
 ## 2. Stavba grafu
 
 Nový prostor z předchozího se vezme a postaví se graf. Zakázané sektory jsou ignorovány.
@@ -35,6 +45,17 @@ Nový prostor z předchozího se vezme a postaví se graf. Zakázané sektory js
 
 ### Výsledný graf
 ![Graf](popis-res/post_graph.svg)
+
+### Složitost
+
+`V = w*h*d`  
+`S = počet speciálních sektorů`
+
+**Časová:** `O(V)`
+
+**Prostorová:** `O(V)`
+
+Počet hran je přibližně `6*V`, (vyjma krajních bodů) takže hrany rostou lineárně s V, proto O(V).
 
 ## 3. Zjednodušení grafu
 
@@ -51,6 +72,19 @@ Na toto se používá upravený Dijkstrův algoritmus, který naviguje pouze skr
 
 ![Zjednodušený graf](popis-res/post_graph_simplified.svg)
 
+### Složitost
+
+`V = w*h*d`  
+`S = počet speciálních sektorů`
+
+**Časová:** `O(S*V*log(V))`
+
+Protože časová složitost použité implementace Dijkstrova algoritmu je O(V*log(V)), ten se provede pro každý speciální sektor.
+
+**Prostorová:** `O(S^2)`
+
+Protože existuje hrana mezí každými dvěma speciálními sektory.
+
 ## 4. Nalezení nejkratší cesty hloupě
 
 Tento krok je důležitý pro následující krok.
@@ -60,6 +94,19 @@ Tento krok je upravený Dijkstra algoritmus, rozdíl je v tom, že:
 - při objevování vrcholu se bere ohled na původní čas a rychlost, která je upravená, pokud se jde ze zrychlovacího/zpomalovacího sektoru
 
 Tímto nalezneme nejrychlejší cestu, kdyby se raketka nemohla vracet.
+
+### Složitost
+
+`V = w*h*d`  
+`S = počet speciálních sektorů`
+
+**Časová:** `O(S*log(S))`
+
+Protože časová složitost použité implementace Dijkstrova algoritmu je O(V*log(V)) (zjednodušený graf má S vrcholů), ten se provede pro každý speciální sektor.
+
+**Prostorová:** `O(S^2)`
+
+Protože existuje hrana mezí každými dvěma speciálními sektory.
 
 ## 5. Nalezení nejkratší cesty
 
@@ -80,3 +127,8 @@ Při objevování vrcholu jsou tyto kroky:
 - naposledy rekurzivně opakujeme tento proces pro všechny sousedy
 
 Jakmile se projdou všechny možnosti, je nalezena nejrychlejší cesta.
+
+### Složitost
+
+Složitost není určitelná, ale:
+- prostorová složitost je závislá na čase vypočítaném hloupým algorithmem (protože to ovlivňuje hloubku rekurze)
