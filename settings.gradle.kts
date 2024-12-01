@@ -12,3 +12,6 @@ project(":posadka").projectDir = file("kolo1/posadka")
 
 include("zavody")
 project(":zavody").projectDir = file("kolo2/zavody")
+
+include("nadrze")
+project(":nadrze").projectDir = file("kolo2/nadrze")
