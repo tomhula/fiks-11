@@ -1,10 +1,10 @@
-# Na úvod
+# Závody
 
 Pro své řešení jsem měl následující předpoklady, které nejsou ze zadání jednoznačně jasné, ale podle sfingy se zdají být pravdivé:
 - raketka se nemůže pohybovat diagonálně (tedy pouze rovnoběžně s jednou z os prostoru)
 - raketka se může pohnout jakýmkoliv směren, nezávisle na tom odkud přilitěla (tj. může se vracet a opakovat stejné sektory)
 - měla-li by raketka při vstupu do sektoru získat rychlost mimo konstrukční limity, tak zůstává původní rychlost (v případě přesažení rychlost tedy nezůstane na maximu, ale zůstane původní)
-- z předchozích předpokladů tedy vychází též to, že raketka může lítat tam a zpět mezi sektory, (nebo i z a na jeden sektor) aby získala rychlost
+- z předchozích předpokladů tedy vychází též to, že raketka může létat tam a zpět mezi sektory, (nebo i z a na jeden sektor) aby získala rychlost
 
 Dále v dokumentu budu dávat příklady pouze z 2D prostoru, ale stejné principy fungují i ve 3D prostoru.
 
@@ -19,7 +19,7 @@ Skládá se z následujících kroků:
 
 ## 1. Oříznutí prostoru
 
-Každá strana 3D prostoru se ořízne (trim) o prostor prázdných sektorů, pokud tam nějaký je. Důlžité je, že pokud nejkrajnější sektor je zakázaný, tak se nesmí oříznout až k němu, aby se nbepřišlo o řešení, při kterém se dá latět okolo něj.
+Každá strana 3D prostoru se ořízne (trim) o prostor prázdných sektorů, pokud tam nějaký je. Důležité je, že pokud nejkrajnější sektor je zakázaný, tak se nesmí oříznout až k němu, aby se nepřišlo o řešení, při kterém se dá letět okolo něj.
 
 ### Prostor před oříznutím
 ![Před oříznutím](popis-res/pre_trim.svg)  
@@ -41,9 +41,9 @@ Nový prostor z předchozího se vezme a postaví se graf. Zakázané sektory js
 Nyní, vzhledem k tomu, že prázdné sektory nijak neovlivňují let raketky a jsou tedy v podstatě pouze vzdálenost, kterou raketka musí překonat, můžeme je z grafu ůplně odebrat a _převést_ na vzdálenost mezi speciálními sektory.
 V tomto kroku se tedy najde **nejkratší cesta z každého sektoru do každého druhého sektoru, která vede pouze přes prázdné sektory** (pro zrychlovací/zpomalovací sektory též cesta do sektoru samotného, která je 2, pokude existuje - z něj a zpět do něj)
 
-Na toto se používá upravený Dijkstrův algoritmus, který naviguje poze skrze prázdné sektory a narazí-li na speciální sektor, uloží vzdálenost k němu.
+Na toto se používá upravený Dijkstrův algoritmus, který naviguje pouze skrze prázdné sektory a narazí-li na speciální sektor, uloží vzdálenost k němu.
 
-### Před zjednodušením grafu (pro jednoduchiost jiné zadání než doposud)
+### Před zjednodušením grafu (pro jednoduchost jiné zadání než doposud)
 
 ![Před zjednodušením](popis-res/pre_graph_simplified.svg)
 
@@ -67,7 +67,7 @@ V tomto kroce se zkouší všechny možné cesty.
 Používá se rekurzivní DFS, který ale objevuje všechny sousedy daného vrcholu, tedy i ty, které už byly objeveny.
 Tento rozdíl dělá to, že se raketka může i vracet, točit dokola a podobně, skutečně všechny možnosti.
 
-_terminační čas_ je čas vypočtený v předchozím kroku.
+_terminační čas_ = výsledek předchozího kroku
 
 Při objevování vrcholu jsou tyto kroky:
 - vypočítá se čas a rychlost (podle předchozího vrcholu), se kterým jsme se na vrchol dostali
@@ -75,7 +75,8 @@ Při objevování vrcholu jsou tyto kroky:
 - zkontroluje se, zda čas na vrchol není větší než terminační čas, pokud ano, končí se s tímto vrcholem (backtrack)
 - přečte se doposud nalezený čas a rychlost, se kterým jsme se na tento vrchol už někdy dostali, pokud takový je
 - je-li stávající čas a rychlost 100% lepší než doposud nalezený, končí se s tímto vrcholem (backtrack)
-  - s určením co je lepší je ten problém, že pomalejší čas může být někdy výhodnější, pokud je větší rychlost a obráceně. Proto kontrolujeme akorát připd, kdy to jistě lepší není a to je, když se čas nebo rychlost rovná a to druhý je lepší/horší, nebo pokud je obojí lepší
-- naposledy opakujeme tento proces pro všechny sousedy
+  - s určením co je lepší je problém, že pomalejší čas a větší rychlost může někdy být výhodnější než lepší čas a menší rychlost a naopak. Proto kontrolujeme pouze případ, kdy to jistě lepší není a to je, když se čas nebo rychlost rovná a to druhé je lepší/horší, nebo pokud je obojí lepší/horší
+  - následný výraz vyjadřuje tuto myšlenku. Výraz je pravdivý, je-li stávající čas a rychlost lepší než nová: `old.time < new.time && old.speed < new.speed || old.time == new.time && old.speed < new.speed || old.speed == new.speed && old.time < new.time`
+- naposledy rekurzivně opakujeme tento proces pro všechny sousedy
 
 Jakmile se projdou všechny možnosti, je nalezena nejrychlejší cesta.
