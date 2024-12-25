@@ -25,6 +25,7 @@ private fun parseInput(): Array<Space>
         val ys = readInts()
 
         val stars = xs.zip(ys) { x, y -> Point(x, y) }
+        /* The task guarantees that no two stars will have the same coordinates. */
         Space(stars.toSet())
     }
 }
