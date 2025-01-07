@@ -44,3 +44,10 @@ I then tried opening it in Wireshark, which did work.
 Examining the packets, I found a telnet communication, where the client sent the flag character by character.
 
 # zip
+
+I first noticed that the zip is using unsafe legacy encryption, which is vulnerable to plain-text attacks.
+But I didn't have any of the original files.
+In the zip, there was a file called d4vid.pub, which could be a public key of a person.
+I tried finding the FIKS organizer named david and found his GitHub profile, which contained a repository with his configuration files.
+There I could find the original versions of the files that were in the zip.
+Then I could use a tool like [bkcrack](https://github.com/kimci86/bkcrack) that can perform the plain text attack and that was it.
