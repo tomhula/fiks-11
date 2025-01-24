@@ -18,3 +18,6 @@ project(":nadrze").projectDir = file("kolo2/nadrze")
 
 include("hvezdy")
 project(":hvezdy").projectDir = file("kolo3/hvezdy")
+
+include("prohledavanivesmiru")
+project(":prohledavanivesmiru").projectDir = file("kolo4/prohledavanivesmiru")
