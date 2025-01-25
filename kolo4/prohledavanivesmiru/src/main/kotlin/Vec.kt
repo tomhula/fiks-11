@@ -1,32 +1,29 @@
-import kotlin.math.atan2
-import kotlin.math.sqrt
+import org.apfloat.Apfloat
 
-data class Vec(val x: Float, val y: Float)
+data class Vec(val x: Apfloat, val y: Apfloat)
 {
-    constructor(x: Int, y: Int) : this(x.toFloat(), y.toFloat())
-
     operator fun plus(other: Vec) = Vec(x + other.x, y + other.y)
 
     operator fun minus(other: Vec) = Vec(x - other.x, y - other.y)
 
-    operator fun times(scalar: Float) = Vec(x * scalar, y * scalar)
+    operator fun times(scalar: Apfloat) = Vec(x * scalar, y * scalar)
 
-    operator fun div(scalar: Float): Vec
+    operator fun div(scalar: Apfloat): Vec
     {
-        require(scalar != 0f) { "Division by zero is not allowed." }
+        require(!scalar.isZero) { "Division by zero is not allowed." }
         return Vec(x / scalar, y / scalar)
     }
 
     infix fun dot(other: Vec) = x * other.x + y * other.y
 
-    fun angle() = atan2(y.toDouble(), x.toDouble())
+    fun angle() = atan2(y, x)
 
     fun magnitude() = sqrt(x * x + y * y)
 
     fun normalize(): Vec
     {
         val mag = magnitude()
-        require(mag != 0f) { "Cannot normalize a zero vector." }
+        require(!mag.isZero) { "Cannot normalize a zero vector." }
         return this / mag
     }
 
@@ -38,7 +35,6 @@ data class Vec(val x: Float, val y: Float)
 
     companion object
     {
-        val ZERO = Vec(0, 0)
-        val ONE = Vec(1, 1)
+        val ZERO = Vec(Apfloat.ZERO, Apfloat.ZERO)
     }
 }

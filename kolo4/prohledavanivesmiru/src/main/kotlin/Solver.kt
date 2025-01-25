@@ -1,13 +1,17 @@
-import kotlin.math.*
+import org.apfloat.Apfloat
+import org.apfloat.Apint
 
 class Solver(
-    val num1: Int,
-    val num2: Int,
-    val num3: Int
+    val num1: Apint,
+    val num2: Apint,
+    val num3: Apint
 )
 {
-    fun solve(): Int
+    fun solve(): Apint
     {
+        if (num1 == num2 || num2 == num3 || num3 == num1)
+            return (-1).api
+
         val point1 = NumToPos.numToPos(num1)
         val point2 = NumToPos.numToPos(num2)
         val point3 = NumToPos.numToPos(num3)
@@ -16,63 +20,79 @@ class Solver(
         val point23DistanceSquared = point2.distanceToSquared(point3)
         val point31DistanceSquared = point3.distanceToSquared(point1)
 
-        if (point12DistanceSquared dneq point23DistanceSquared || point23DistanceSquared dneq point31DistanceSquared || point31DistanceSquared dneq point12DistanceSquared)
-            return -1
+        val isEquilateral =
+            point12DistanceSquared feq point23DistanceSquared && point23DistanceSquared feq point31DistanceSquared && point31DistanceSquared feq point12DistanceSquared
+        if (!isEquilateral)
+            return (-1).api
+        val isOrientedAlongYAxis = (point1.y feq point2.y || point2.y feq point3.y || point3.y feq point1.y)
+        if (!isOrientedAlongYAxis)
+            return (-1).api
 
-        val center = (point1 + point2 + point3) / 3f
+        val center = (point1 + point2 + point3) / 3.apf
 
         if (!isPointOnGrid(center))
-            return 0
+            return Apfloat.ZERO
 
         return PosToNum.posToNum(center)
     }
 
-    private infix fun Float.deq(other: Float) = abs(this - other) < DISTANCE_FLOAT_TOLERANCE
-    private infix fun Float.dneq(other: Float) = !deq(other)
-
     companion object
     {
-        const val DISTANCE_FLOAT_TOLERANCE = 0.01
-        val SQRT_3 = sqrt(3f)
+        val FLOAT_TOLERANCE = 0.01.apf
+        val SQRT_3 = sqrt(3.api)
 
-        fun isPointOnGrid(point: Vec) =
-            point.x % 0.5f == 0f && (point.y / (SQRT_3 / 2f)).let { it == it.toInt().toFloat() }
+        infix fun Apfloat.feq(other: Apfloat) = abs(this - other) < FLOAT_TOLERANCE
+        infix fun Apfloat.fneq(other: Apfloat) = !feq(other)
 
-        fun layer(number: Int) = ceil((1 + sqrt(1 + 24f * number)) / 6).toInt()
-        fun layerSize(layer: Int) = 3 * layer - 2
-        fun layerMax(layer: Int) = (3 * layer * layer - layer) / 2
-        fun layerMin(layerMax: Int, layerSize: Int) = layerMax - layerSize + 1
-        fun layerDirection(layer: Int) = if (layer % 2 == 0) 1 else -1
-        fun layerMaxX(layer: Int, direction: Int) = (layer - 1) * direction
-        fun layerMinX(layerMaxX: Int) = -layerMaxX
+        fun isPointOnGrid(point: Vec) = isOnGrid(point.x, 0.5f.apf, FLOAT_TOLERANCE) && isOnGrid(point.y, SQRT_3 / 2, FLOAT_TOLERANCE)
 
-        fun hexagonVertexRadiusToSideRadius(vertexRadius: Int) = (SQRT_3 * vertexRadius) / 2f
+        private fun isOnGrid(value: Apfloat, step: Apfloat, error: Apfloat): Boolean
+        {
+            val nearestGridPoint = round(value / step) * step
+            return abs(value - nearestGridPoint) <= error
+        }
+
+        fun layer(number: Apint) = ceil((1 + sqrt(1 + 24 * number)) / 6)
+        fun layerSize(layer: Apint) = 3 * layer - 2
+        fun layerMax(layer: Apint) = (3 * layer * layer - layer) / 2
+        fun layerMin(layerMax: Apint, layerSize: Apint) = layerMax - layerSize + 1
+        fun layerDirection(layer: Apint) = if ((layer % 2).isZero) API_ONE else (-1).api
+        fun layerMaxX(layer: Apint, direction: Apint) = (layer - 1) * direction
+        fun layerMinX(layerMaxX: Apint) = -layerMaxX
+
+        fun hexagonVertexRadiusToSideRadius(vertexRadius: Apint) = (SQRT_3 * vertexRadius) / 2
 
         object NumToPos
         {
-            fun layerLocalNumber(number: Int, layerMin: Int) = number - layerMin + 1
-            fun layerPart(layerLocalNumber: Int, layer: Int) = floor(layerLocalNumber / layer.toFloat()).toInt()
-            fun numberX(layerMinX: Int, layerDirection: Int, numberLocalX: Float) =
+            fun layerLocalNumber(number: Apint, layerMin: Apint) = number - layerMin + 1
+            fun layerPart(layerLocalNumber: Apint, layer: Apint) = when
+            {
+                layerLocalNumber < layer -> API_ZERO
+                layerLocalNumber < layer * 2 - 1 -> API_ONE
+                else -> 2.api
+            }
+            fun numberX(layerMinX: Apint, layerDirection: Apint, numberLocalX: Apfloat) =
                 layerMinX + numberLocalX * layerDirection
 
-            fun numberCircleY(layerPart: Int, layer: Int, layerLocalNumber: Int) = when (layerPart)
+            fun numberCircleY(layerPart: Apint, layer: Apint, layerLocalNumber: Apint) = when (layerPart)
             {
-                0 -> layerLocalNumber - 1
-                1 -> layer - 1
-                2 -> layer - (layerLocalNumber - 2 * layer + 2)
+                API_ZERO -> layerLocalNumber - 1
+                API_ONE -> layer - 1
+                2.api -> layer - (layerLocalNumber - 2 * layer + 2)
                 else -> throw IllegalArgumentException("Layer part must be in range 0..2.")
             }
 
-            fun numberY(numberCircleY: Int) = hexagonVertexRadiusToSideRadius(numberCircleY)
-            fun numberLocalX(layer: Int, layerPart: Int, layerLocalNumber: Int) = when (layerPart)
+            fun numberY(numberCircleY: Apint) = hexagonVertexRadiusToSideRadius(numberCircleY)
+
+            fun numberLocalX(layer: Apint, layerPart: Apint, layerLocalNumber: Apint) = when (layerPart)
             {
-                0 -> (layerLocalNumber - 1) / 2f
-                1 -> ((layer - 1) / 2f) + (layerLocalNumber - layer)
-                2 -> (layer - 1) / 2f + layer + (layerLocalNumber - 2 * layer - 1) / 2f
-                else -> throw IllegalArgumentException("Layer part must be in range 0..2.")
+                API_ZERO -> (layerLocalNumber - 1) / 2f
+                API_ONE -> ((layer - 1) / 2f) + (layerLocalNumber - layer)
+                2.api -> (layer - 1) / 2f + layer + (layerLocalNumber - 2 * layer - 1) / 2f
+                else -> throw IllegalArgumentException("Layer part must be in range 0..2. (was $layerPart)")
             }
 
-            fun numToPos(number: Int): Vec
+            fun numToPos(number: Apint): Vec
             {
                 val layer = layer(number)
                 val layerSize = layerSize(layer)
@@ -88,55 +108,57 @@ class Solver(
                 val numberCircleY = numberCircleY(layerPart, layer, layerLocalNumber)
                 val numberY = numberY(numberCircleY)
 
-                return Vec(numberX, numberY.toFloat())
+                return Vec(numberX, numberY)
             }
         }
 
         object PosToNum
         {
-            fun globalLayerPart(angle: Float) = when (angle)
+            fun globalLayerPart(angle: Apfloat) = when (angle)
             {
-                in 0f..<(Math.PI.toFloat() / 3) -> 0
-                in (Math.PI.toFloat() / 3)..<(2 * Math.PI.toFloat() / 3) -> 1
-                else -> 2
+                in Apfloat.ZERO..<(APF_PI / 3) -> API_ZERO
+                in (APF_PI / 3)..<(2 * APF_PI / 3) -> API_ONE
+                else -> 2.api
             }
 
-            fun actualLayerPart(globalLayerPart: Int, layerDirection: Int) = if (layerDirection == -1)
+            fun actualLayerPart(globalLayerPart: Apint, layerDirection: Apint) = if (layerDirection == (-1).api)
                 globalLayerPart
             else
                 2 - globalLayerPart
 
-            fun layer(layerPart: Int, pos: Vec): Int
+            fun layer(layerPart: Apint, pos: Vec): Apint
             {
                 val controlVector = when (layerPart)
                 {
-                    0 -> (Math.PI.toFloat() / 6).let { Vec(cos(it), sin(it)) }
-                    1 -> (Math.PI.toFloat() / 2).let { Vec(cos(it), sin(it)) }
-                    2 -> (5 * Math.PI.toFloat() / 6).let { Vec(cos(it), sin(it)) }
+                    0.api -> (APF_PI / 6).let { Vec(cos(it), sin(it)) }
+                    1.api -> (APF_PI / 2).let { Vec(cos(it), sin(it)) }
+                    2.api -> (5 * APF_PI / 6).let { Vec(cos(it), sin(it)) }
                     else -> throw IllegalArgumentException("Layer part must be in range 0..2.")
                 }
                 val angleToControl = acos(controlVector.normalize() dot pos.normalize())
-                val distanceToControlLineIntersection = pos.magnitude() * cos(angleToControl)
-                val vertexRadiusToSideRadius = (2 * SQRT_3 * distanceToControlLineIntersection) / 3
-                return round(vertexRadiusToSideRadius).toInt() + 1
+                val magnitude = pos.magnitude()
+                val cos = cos(angleToControl)
+                val distanceToControlLineIntersection = magnitude.multiply(cos)
+                val vertexRadiusToSideRadius = (2 * SQRT_3 * distanceToControlLineIntersection) / 3f
+                return round(vertexRadiusToSideRadius) + 1
             }
 
-            fun layerLocalNumber(layerPart: Int, layerLocalNumberX: Float, layer: Int, layerDirection: Int) = when (layerPart)
+            fun layerLocalNumber(layerPart: Apint, layerLocalNumberX: Apfloat, layer: Apint, layerDirection: Apint) = when (layerPart)
             {
-                0 -> 2 * layerDirection * layerLocalNumberX + 1
-                1 -> layerDirection * layerLocalNumberX + (layer + 1) / 2f
-                2 -> 2 * layer - 1 + 2 * (layerDirection * layerLocalNumberX - (layer - 1) / 2f - (layer - 1))
+                Apfloat.ZERO -> 2L * layerDirection * layerLocalNumberX + 1
+                1.api -> layerDirection * layerLocalNumberX + (layer + 1) / 2f
+                2.api -> 2L * layer - 1 + 2L * (layerDirection * layerLocalNumberX - (layer - 1) / 2f - (layer - 1))
                 else -> throw IllegalArgumentException("Layer part must be in range 0..2.")
             }
 
-            fun layerLocalNumberX(pos: Vec, layerMinX: Int): Float = pos.x - layerMinX
+            fun layerLocalNumberX(pos: Vec, layerMinX: Apint): Apfloat = pos.x - layerMinX
 
-            fun posToNum(pos: Vec): Int
+            fun posToNum(pos: Vec): Apint
             {
                 if (pos == Vec.ZERO)
-                    return 1
+                    return 1.api
 
-                val angle = pos.angle().toFloat()
+                val angle = pos.angle()
                 val globalLayerPart = globalLayerPart(angle)
                 val layer = layer(globalLayerPart, pos)
                 val layerDirection = layerDirection(layer)
@@ -146,7 +168,7 @@ class Solver(
                 val layerMinX = layerMinX(layerMaxX(layer, layerDirection))
                 val layerLocalNumberX = layerLocalNumberX(pos, layerMinX)
                 val layerLocalNumber = layerLocalNumber(actualLayerPart, layerLocalNumberX, layer, layerDirection)
-                return layerMin + layerLocalNumber.toInt() - 1
+                return layerMin + floor(layerLocalNumber) - 1
             }
         }
     }
