@@ -3,7 +3,7 @@ import org.apfloat.ApfloatMath
 import org.apfloat.Apint
 import java.math.RoundingMode
 
-const val PRECISION = 200L
+const val PRECISION = 110L
 
 operator fun Apfloat.plus(other: Apfloat): Apfloat = this.add(other)
 operator fun Apfloat.minus(other: Apfloat): Apfloat = this.subtract(other)
