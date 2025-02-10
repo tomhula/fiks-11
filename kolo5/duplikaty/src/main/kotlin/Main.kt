@@ -1,4 +1,3 @@
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 fun main()
@@ -11,10 +10,11 @@ fun main()
 
 fun countSubstrings(strings: List<String>): Int
 {
-    val count = AtomicInteger()
     val appearances = mutableMapOf<String, Int>()
-
     val stringsHalf = strings.size / 2
+
+    var t1Count = 0
+    var t2Count = 0
 
     val t1 = thread {
         for (i in 0 ..< stringsHalf)
@@ -22,7 +22,7 @@ fun countSubstrings(strings: List<String>): Int
             val substring = strings[i]
             for ((j, string) in strings.withIndex())
                 if (i != j && string.contains(substring))
-                    count.incrementAndGet()
+                    t1Count++
         }
     }
     val t2 = thread {
@@ -31,9 +31,10 @@ fun countSubstrings(strings: List<String>): Int
             val substring = strings[i]
             for ((j, string) in strings.withIndex())
                 if (i != j && string.contains(substring))
-                    count.incrementAndGet()
+                    t2Count++
         }
     }
+
     val t3 = thread {
         for (string in strings)
             appearances[string] = (appearances[string] ?: 0) + 1
@@ -43,7 +44,7 @@ fun countSubstrings(strings: List<String>): Int
     t2.join()
     t3.join()
 
-    val result = count.get() - appearances.values.sumOf { combinationsOfTwo(it) }
+    val result = t1Count + t2Count - appearances.values.sumOf { combinationsOfTwo(it) }
 
     return result
 }
