@@ -9,29 +9,23 @@ fun main()
 fun countSubstrings(strings: List<String>): Int
 {
     var count = 0
-    val uniquePairs = mutableSetOf<Long>()
+    val appearances = mutableMapOf<String, Int>()
 
     for ((i, substring) in strings.withIndex())
+    {
+        appearances.putIfAbsent(substring, 0)
+        appearances[substring] = appearances[substring]!! + 1
         for ((j, string) in strings.withIndex())
-            if (i != j && string.contains(substring) && uniquePairs.add(cantorHash(i, j)))
+            if (i != j && string.contains(substring))
                 count++
+    }
 
-    return count
+    val result = count - appearances.values.sumOf { combinationsOfTwo(it) }
+
+    return result
 }
 
-/* ChatGPT: https://chatgpt.com/share/67a9e3cc-943c-800e-b662-ca7e31f84333  */
-private fun cantorHash(a: Int, b: Int): Long
-{
-    val (x, y) = if (a < b) a to b else b to a
-    return ((x + y).toLong() * (x + y + 1) / 2) + x
-}
-
-fun primeHash(a: Int, b: Int): Long {
-    val P = 150001L
-    val Q = 150003L
-    val (x, y) = if (a < b) a to b else b to a
-    return P * x + Q * y
-}
+private fun combinationsOfTwo(n: Int) = n * (n - 1) / 2
 
 private fun solve(entry: Entry): Int
 {
