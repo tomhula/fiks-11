@@ -6,57 +6,36 @@ fun main()
         println(solve(entry))
 }
 
+fun countSubstrings(strings: List<String>): Int
+{
+    var count = 0
+    val uniquePairs = mutableSetOf<Long>()
+
+    for ((i, substring) in strings.withIndex())
+        for ((j, string) in strings.withIndex())
+            if (i != j && string.contains(substring) && uniquePairs.add(cantorHash(i, j)))
+                count++
+
+    return count
+}
+
+/* ChatGPT: https://chatgpt.com/share/67a9e3cc-943c-800e-b662-ca7e31f84333  */
+private fun cantorHash(a: Int, b: Int): Long
+{
+    val (x, y) = if (a < b) a to b else b to a
+    return ((x + y).toLong() * (x + y + 1) / 2) + x
+}
+
+fun primeHash(a: Int, b: Int): Long {
+    val P = 150001L
+    val Q = 150003L
+    val (x, y) = if (a < b) a to b else b to a
+    return P * x + Q * y
+}
+
 private fun solve(entry: Entry): Int
 {
-    val textMapSize = entry.totalLength + entry.words.size - 1
-    /* Char index in `text` to word index in `entry.words` */
-    val textMap = Array(textMapSize) { -1 }
-    /* Points to the start of next word */
-    var textMapCurrentIndex = 0
-    val text = buildString {
-        for ((wordIndex, word) in entry.words.withIndex())
-        {
-            append(word)
-            if (wordIndex != entry.words.lastIndex)
-                append("|")
-            for (charIndex in word.indices)
-                textMap[textMapCurrentIndex + charIndex] = wordIndex
-            textMapCurrentIndex += word.length + 1
-        }
-    }
-
-    val ahoCorasick = AhoCorasick(text, entry.words)
-
-    val matches = ahoCorasick.getMatches()
-
-    var actualMatchCount = 0
-
-    /* Word -> Words containing it */
-    val actualMatches = mutableMapOf<Int, Set<Int>>()
-    /* Word -> Words it contains */
-    val reversedActualMatches = mutableMapOf<Int, MutableSet<Int>>()
-
-    for ((wordMatchesIndex, wordMatches) in matches.withIndex())
-    {
-        val matchedWords = mutableSetOf<Int>()
-
-        for (wordMatch in wordMatches)
-        {
-            val word = textMap[wordMatch]
-            if (matchedWords.add(word))
-                reversedActualMatches.getOrPut(word, { mutableSetOf() }).add(wordMatchesIndex)
-        }
-
-        actualMatches[wordMatchesIndex] = matchedWords
-        actualMatchCount += matchedWords.size
-    }
-
-    // println(text)
-    // println(actualMatches)
-    // println(reversedActualMatches)
-
-    /* Remove self-matches */
-    return actualMatchCount - entry.words.size
+    return countSubstrings(entry.words)
 }
 
 private fun parseInput(): List<Entry>
